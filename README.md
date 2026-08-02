@@ -1,5 +1,11 @@
 # 脉络 Financial Intelligence
 
+[![Live Demo](https://img.shields.io/badge/demo-vibe--coding--4vf.pages.dev-2a4d85)](https://vibe-coding-4vf.pages.dev)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2f7d5b)](LICENSE)
+[![Zero Dependency](https://img.shields.io/badge/deps-0-64707f)](demo/mailuo-v2.html)
+
+> **在线演示**：<https://vibe-coding-4vf.pages.dev>（Cloudflare Pages 部署，打开即用）
+
 面向投研、投资与企业战略团队的**多市场证券数据与事件研究平台**（前端原型）。
 
 以「数据 + 事件」为核心，把分散在财报、公告、股东结构、机构持仓、宏观数据与新闻中的信息，整合为统一的公司数据档案与可追溯的纵向事件 Timeline，帮助用户快速回答三个问题：**发生了什么、影响谁、是否值得行动**。
@@ -13,8 +19,15 @@
 ```
 demo/
 ├── mailuo-v1.html    # V1：主题式金融研究 Timeline
-└── mailuo-v2.html    # V2：跨市场证券数据平台（当前主版本）
+├── mailuo-v2.html    # V2：跨市场证券数据平台（当前主版本）
+└── index.html        # Pages 部署入口（= mailuo-v2.html）
+docs/
+├── PRD-v1.md         # V1 产品需求文档
+└── PRD-v2.md         # V2 产品需求文档
+.github/              # Issue / PR 协作模板
 README.md
+CHANGELOG.md          # 版本变更记录
+LICENSE               # MIT
 ```
 
 两个版本均为**零依赖单文件应用**（HTML + CSS + 原生 JavaScript），无需构建、无需后端。

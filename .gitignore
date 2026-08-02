@@ -1,0 +1,16 @@
+# 依赖与构建缓存
+node_modules/
+.cache/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Office 文档与临时文件（课程笔记不纳入版本管理）
+*.docx
+~$*.docx
+
+# 课程练习目录（仅本地保留）
+L01/
+L02/
