@@ -104,6 +104,23 @@ python -m http.server 8000
 - **数据结构**：`COUNTRIES → exchanges → DIRECTORY → COMPANIES / EVENTS` 分层；新增公司仅需在 `SEEDS` 数组追加一行 `[名称, 代码, 交易所, 板块]`，市值/价格/事件等字段由确定性伪随机生成器补全
 - **视觉规范**：深蓝 + 石墨灰 + 白主色；低饱和绿（利好/上涨）与低饱和红（风险/下跌）；金额、币种、百分比格式统一；全程标注市场、币种、数据时间与来源
 
+## 开放数据 API
+
+站点通过 Cloudflare Pages Functions 提供只读 JSON API（开放 CORS，无需鉴权）：
+
+| 接口 | 说明 |
+| --- | --- |
+| `GET /api` | 接口文档（自描述） |
+| `GET /api/stats` | 全站覆盖统计（公司/市场/板块/事件数量） |
+| `GET /api/markets` | 国家/地区 → 交易所 → 板块结构与计数 |
+| `GET /api/companies?market=CN&sector=半导体&q=腾讯&limit=50&offset=0` | 公司数据库列表（支持市场/交易所/板块/关键词筛选与分页） |
+| `GET /api/company/catl` | 单个公司详情（精编公司含估值/财务/股东/事件） |
+| `GET /api/events?company=catl&type=earnings&lv=high&limit=20` | 公司事件 Timeline（`company=all` 可取全部精编事件） |
+
+示例：<https://vibe-coding-4vf.pages.dev/api/companies?market=CN&sector=半导体&limit=5>
+
+> API 与站点共用同一份模拟数据层（`js/mailuo-v2.data.js`），所有响应均带 `meta.dataSource` 与 `meta.updateTime` 标注。
+
 ## 明确不做（本期范围）
 
 - 不接真实 API、不做登录/后台/数据库
