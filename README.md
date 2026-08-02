@@ -114,7 +114,7 @@ python -m http.server 8000
 | `GET /api/stats` | 全站覆盖统计（公司/市场/板块/事件数量） |
 | `GET /api/markets` | 国家/地区 → 交易所 → 板块结构与计数 |
 | `GET /api/companies?market=CN&sector=半导体&q=腾讯&limit=50&offset=0` | 公司数据库列表（支持市场/交易所/板块/关键词筛选与分页） |
-| `GET /api/company/catl` | 单个公司详情（精编公司含估值/财务/股东/事件） |
+| `GET /api/company?id=catl` | 单个公司详情（精编公司含估值/财务/股东/事件） |
 | `GET /api/events?company=catl&type=earnings&lv=high&limit=20` | 公司事件 Timeline（`company=all` 可取全部精编事件） |
 
 示例：<https://vibe-coding-4vf.pages.dev/api/companies?market=CN&sector=半导体&limit=5>
