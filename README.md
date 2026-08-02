@@ -12,10 +12,8 @@
 
 ```
 demo/
-├── L01/
-│   └── mailuo.html     # V1：主题式金融研究 Timeline
-└── L02/
-    └── mailuo.html     # V2：跨市场证券数据平台（当前主版本）
+├── mailuo-v1.html    # V1：主题式金融研究 Timeline
+└── mailuo-v2.html    # V2：跨市场证券数据平台（当前主版本）
 README.md
 ```
 
@@ -26,15 +24,14 @@ README.md
 直接用浏览器打开对应文件，或启动本地静态服务器：
 
 ```powershell
-# 任选其一
-cd demo/L02
+cd demo
 python -m http.server 8000
-# 浏览器访问 http://localhost:8000/mailuo.html
+# 浏览器访问 http://localhost:8000/mailuo-v2.html
 ```
 
 ---
 
-## V2 · 跨市场证券数据平台（demo/L02/mailuo.html）
+## V2 · 跨市场证券数据平台（demo/mailuo-v2.html）
 
 ### 首页信息架构
 
@@ -76,7 +73,7 @@ python -m http.server 8000
 - 收藏（★）、标记重要（⚑，卡片红色描边）、查看来源，均有即时视觉反馈与 Toast 提示
 - 5 家核心公司（宁德时代、贵州茅台、特斯拉、腾讯控股、三星电子）为手工精编数据；其余公司由确定性生成器补全，同样覆盖全部模块
 
-## V1 · 主题式研究 Timeline（demo/L01/mailuo.html）
+## V1 · 主题式研究 Timeline（demo/mailuo-v1.html）
 
 早期版本：以研究主题（宁德时代/人工智能/美国降息）为入口的纵向事件 Timeline，含主题概览指标卡、类型/时间筛选、详情抽屉与收藏/标重要交互。
 
