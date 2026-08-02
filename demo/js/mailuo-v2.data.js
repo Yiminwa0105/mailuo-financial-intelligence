@@ -1120,3 +1120,7 @@ var SEEDS = [
     });
   });
 })();
+
+/* ES Module 导出：供浏览器 module 脚本与 Pages Functions 复用 */
+export { TYPE_META, IMPACT_META, MARKETS, DATA_SOURCE, UPDATE_TIME, COMPANIES, EVENTS, COUNTRIES, SECTORS, DIRECTORY };
+

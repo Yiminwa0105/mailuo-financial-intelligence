@@ -1,20 +1,10 @@
-/* 脉络开放数据 API · 共享库（下划线开头，不注册为路由） */
+/* 脉络开放数据 API · 共享库（下划线开头，不注册为路由）
+   直接以 ES Module 复用站点数据层（Workers 禁止 eval/new Function） */
 
-let cache = null;
+import * as DATA from '../../js/mailuo-v2.data.js';
 
-export async function loadData(env, origin) {
-  if (cache) return cache;
-  const res = await env.ASSETS.fetch(new URL('/js/mailuo-v2.data.js', origin));
-  if (!res.ok) throw new Error('data asset not found: ' + res.status);
-  const src = await res.text();
-  const factory = new Function(
-    src +
-    '\n;return { TYPE_META: TYPE_META, IMPACT_META: IMPACT_META, MARKETS: MARKETS,' +
-    ' DATA_SOURCE: DATA_SOURCE, UPDATE_TIME: UPDATE_TIME, COMPANIES: COMPANIES,' +
-    ' EVENTS: EVENTS, COUNTRIES: COUNTRIES, SECTORS: SECTORS, DIRECTORY: DIRECTORY };'
-  );
-  cache = factory();
-  return cache;
+export async function loadData() {
+  return DATA;
 }
 
 export function json(data, status) {

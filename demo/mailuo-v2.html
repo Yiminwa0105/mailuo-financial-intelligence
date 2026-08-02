@@ -112,7 +112,10 @@
 
 <div class="toast-wrap" id="toastWrap"></div>
 
-<script src="js/mailuo-v2.data.js"></script>
-<script src="js/mailuo-v2.app.js"></script>
+<script type="module">
+  import * as D from './js/mailuo-v2.data.js';
+  Object.assign(globalThis, D);       // 数据层暴露为全局变量，供 app.js 使用
+  await import('./js/mailuo-v2.app.js');
+</script>
 </body>
 </html>
