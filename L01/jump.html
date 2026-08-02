@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>跳一跳 · 柴犬大冒险</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    overflow: hidden;
+    font-family: "YouYuan", "幼圆", -apple-system, "PingFang SC",
+      "Microsoft YaHei", sans-serif;
+    /* 多巴胺渐变背景：薄荷 -> 蜜桃 -> 奶黄 */
+    background: linear-gradient(135deg, #bff5d6 0%, #ffd6e0 50%, #fff3c4 100%);
+  }
+
+  #game-canvas { display: block; }
+
+  /* 模式切换条：醒目大尺寸 + 彩色渐变 + 呼吸动画 */
+  #mode-bar {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 8px;
+    border-radius: 22px;
+    z-index: 10;
+    box-shadow: 0 8px 24px rgba(255, 107, 157, 0.25);
+    border: 3px solid rgba(255, 255, 255, 0.9);
+  }
+  .mode-btn {
+    padding: 12px 22px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #8b7a9d;
+    background: transparent;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 1px;
+    transition: all 0.25s ease;
+    position: relative;
+  }
+  .mode-btn:hover:not(.active) {
+    color: #ff6b9d;
+    transform: translateY(-1px);
+  }
+  .mode-btn.active {
+    color: #fff;
+    background: linear-gradient(135deg, #ff8b94, #ff6b9d, #c4b5fd);
+    box-shadow: 0 6px 18px rgba(255, 107, 157, 0.5);
+    animation: modePulse 1.6s ease-in-out infinite;
+  }
+  @keyframes modePulse {
+    0%, 100% { box-shadow: 0 6px 18px rgba(255, 107, 157, 0.5); }
+    50%      { box-shadow: 0 8px 26px rgba(196, 181, 253, 0.7); }
+  }
+  .mode-btn.active::after {
+    content: "✿";
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    font-size: 14px;
+    color: #ffd93d;
+    animation: starSpin 2s linear infinite;
+  }
+  @keyframes starSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  /* 主角选择面板（奇迹暖暖风） */
+  #player-picker {
+    position: fixed;
+    bottom: 80px;
+    right: 24px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 14px;
+    border-radius: 22px;
+    z-index: 10;
+    box-shadow: 0 8px 24px rgba(196, 181, 253, 0.3);
+    border: 3px solid rgba(255, 255, 255, 0.95);
+    width: 180px;
+  }
+  .picker-title {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #9d8bb0;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .picker-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .picker-item {
+    background: linear-gradient(135deg, #fff5f8, #fff);
+    border: 2px solid transparent;
+    border-radius: 14px;
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  .picker-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(255, 143, 171, 0.25);
+  }
+  .picker-item.active {
+    border-color: #ff6b9d;
+    background: linear-gradient(135deg, #ffe0ec, #fff);
+    box-shadow: 0 4px 12px rgba(255, 107, 157, 0.35);
+  }
+  .picker-item.active::after {
+    content: "✓";
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 18px; height: 18px;
+    background: #ff6b9d;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+  }
+  .picker-emoji {
+    font-size: 28px;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .picker-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6d5a82;
+  }
+
+  /* 顶部分数 */
+  #score {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 48px;
+    font-weight: 700;
+    color: #ff6b9d;
+    user-select: none;
+    pointer-events: none;
+    z-index: 10;
+    text-shadow: 0 2px 0 #fff, 0 4px 12px rgba(255, 107, 157, 0.3);
+  }
+
+  /* 底部提示 */
+  #hint {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    color: #9d8bb0;
+    user-select: none;
+    pointer-events: none;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.6);
+    padding: 8px 18px;
+    border-radius: 20px;
+  }
+
+  /* 蓄力条 */
+  #power-bar {
+    position: fixed;
+    bottom: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 10;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+  }
+  #power-bar.show { opacity: 1; }
+  #power-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #a8e6cf, #ffd3b6, #ff8b94);
+    border-radius: 10px;
+    transition: width 0.05s linear;
+  }
+
+  /* 游戏结束遮罩 */
+  #game-over {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 240, 245, 0.88);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+  #game-over.show { display: flex; }
+
+  .panel {
+    background: #fff;
+    border-radius: 28px;
+    padding: 36px 48px;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(255, 143, 171, 0.3);
+    border: 3px solid #ffe0ec;
+    min-width: 360px;
+  }
+  .panel h1 {
+    font-size: 28px;
+    color: #ff6b9d;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+  .panel .score-line {
+    font-size: 16px;
+    color: #8b7a9d;
+    margin-bottom: 18px;
+  }
+  .panel .score-line span {
+    font-size: 32px;
+    font-weight: 700;
+    color: #ff8b94;
+  }
+
+  /* 排行榜 */
+  .leaderboard {
+    margin: 0 auto 22px;
+    text-align: left;
+  }
+  .leaderboard h2 {
+    font-size: 14px;
+    color: #9d8bb0;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    text-align: center;
+    font-weight: 600;
+  }
+  .leaderboard ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .leaderboard li {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    margin-bottom: 6px;
+    background: linear-gradient(90deg, #fff5f8, #fff);
+    border-radius: 14px;
+    font-size: 13px;
+    color: #5d4e6d;
+  }
+  .leaderboard li:nth-child(1) { background: linear-gradient(90deg, #fff0c4, #fff); }
+  .leaderboard li:nth-child(2) { background: linear-gradient(90deg, #ffe8d6, #fff); }
+  .leaderboard li:nth-child(3) { background: linear-gradient(90deg, #ffe0ec, #fff); }
+  .leaderboard .rank {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: #ffd6e0;
+    color: #ff6b9d;
+    font-weight: 700;
+    text-align: center;
+    line-height: 24px;
+    font-size: 12px;
+  }
+  .leaderboard li:nth-child(1) .rank { background: #ffd93d; color: #b8860b; }
+  .leaderboard li:nth-child(2) .rank { background: #e0e0e0; color: #555; }
+  .leaderboard li:nth-child(3) .rank { background: #ffcaa0; color: #a0522d; }
+  .leaderboard .info { line-height: 1.4; }
+  .leaderboard .info .id { font-weight: 600; color: #6d5a82; }
+  .leaderboard .info .time { font-size: 11px; color: #b0a0bf; }
+  .leaderboard .pts {
+    font-weight: 700;
+    color: #ff8b94;
+    font-size: 16px;
+  }
+  .leaderboard .empty {
+    text-align: center;
+    padding: 16px;
+    color: #b0a0bf;
+    font-size: 13px;
+  }
+
+  #restart-btn {
+    padding: 12px 36px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #ff8b94, #ff6b9d);
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    font-family: inherit;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  #restart-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 107, 157, 0.45);
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game-canvas"></canvas>
+<div id="score">0</div>
+
+<!-- 模式切换 -->
+<div id="mode-bar">
+  <button class="mode-btn active" data-mode="easy">简单模式</button>
+  <button class="mode-btn" data-mode="hard">复杂模式</button>
+</div>
+
+<!-- 主角选择面板（类似奇迹暖暖换装） -->
+<div id="player-picker">
+  <div class="picker-title">✿ 选择主角 ✿</div>
+  <div class="picker-grid"></div>
+</div>
+
+<div id="power-bar"><div id="power-fill"></div></div>
+<div id="hint">按住鼠标或空格蓄力，松开起跳 ✿</div>
+
+<div id="game-over">
+  <div class="panel">
+    <h1>哎呀摔啦 ~</h1>
+    <div class="score-line">本次得分：<span id="final-score">0</span></div>
+    <div class="leaderboard">
+      <h2>✿ 历史排行榜 TOP 5 ✿</h2>
+      <ol id="leaderboard-list"></ol>
+    </div>
+    <button id="restart-btn">再来一次 ✦</button>
+  </div>
+</div>
+
+<!-- Three.js 通过 importmap 从 CDN 引入 -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.180.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ===================== 可调参数 ===================== */
+const CONFIG = {
+  platformSize: 2.4,        // 平台边长
+  platformHeight: 1.0,      // 平台高度
+  minGap: 2.0,              // 平台间最小间距
+  maxGap: 5.0,              // 平台间最大间距
+  chargeTime: 1.2,          // 蓄力满所需秒数
+  jumpBaseDistance: 1.5,    // 最小跳跃水平距离
+  jumpMaxDistance: 8.0,     // 最大跳跃水平距离
+  jumpHeight: 2.4,          // 跳跃最高点高度
+  jumpDuration: 0.6,        // 跳跃滞空时间
+  gravity: 30,              // 掉落重力加速度
+  cameraFollowSpeed: 4,     // 相机跟随平滑速度
+  cameraLookAhead: 2.6,     // 相机前瞻距离
+  // 多巴胺马卡龙配色（粉/蓝/绿/黄/紫/桃）
+  palette: [
+    0xffb3d9, 0xb3d9ff, 0xb3ffd9, 0xfff0b3,
+    0xd9b3ff, 0xffd9b3, 0xb3f0ff, 0xffc4d6
+  ],
+  bgColor: 0xffeef5
+};
+
+/* ===================== 基础场景 ===================== */
+const canvas = document.getElementById('game-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setClearColor(0x000000, 0); // 透明，露出 body 渐变
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(CONFIG.bgColor, 22, 65);
+
+// 斜 45 度俯视相机
+const camera = new THREE.PerspectiveCamera(
+  45, window.innerWidth / window.innerHeight, 0.1, 200
+);
+const CAMERA_RADIUS = Math.hypot(7, 7);
+const CAMERA_HEIGHT = 11;
+let camAngle = Math.PI / 4;
+let camAngleTarget = Math.PI / 4;
+camera.position.set(CAMERA_RADIUS * Math.cos(camAngle), CAMERA_HEIGHT, CAMERA_RADIUS * Math.sin(camAngle));
+camera.lookAt(0, 0, 0);
+
+function updateCamAngleTarget() {
+  camAngleTarget = jumpDir.x !== 0 ? Math.PI / 4 : Math.PI * 3 / 4;
+}
+
+/* ===================== 灯光 ===================== */
+scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+dirLight.position.set(6, 12, 4);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.set(2048, 2048);
+dirLight.shadow.camera.left = -15;
+dirLight.shadow.camera.right = 15;
+dirLight.shadow.camera.top = 15;
+dirLight.shadow.camera.bottom = -15;
+scene.add(dirLight);
+
+// 暖色补光，让画面更柔和可爱
+const fillLight = new THREE.DirectionalLight(0xffd6e0, 0.3);
+fillLight.position.set(-4, 6, -4);
+scene.add(fillLight);
+
+// 地面接收阴影
+const shadowPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(200, 200),
+  new THREE.ShadowMaterial({ opacity: 0.12 })
+);
+shadowPlane.rotation.x = -Math.PI / 2;
+shadowPlane.position.y = -0.01;
+shadowPlane.receiveShadow = true;
+scene.add(shadowPlane);
+
+/* ===================== 音效（Web Audio API 合成） ===================== */
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+// 通用：合成一个带包络的正弦音
+function playTone(freq, duration, type = 'sine', volume = 0.2) {
+  const ctx = getAudio();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  gain.gain.setValueAtTime(0, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+  osc.start();
+  osc.stop(ctx.currentTime + duration);
+}
+// 起跳：上扬 pop
+function sfxJump() {
+  playTone(440, 0.12, 'sine', 0.18);
+  setTimeout(() => playTone(660, 0.12, 'sine', 0.15), 60);
+}
+// 落地成功：清脆 ding
+function sfxLand() {
+  playTone(880, 0.08, 'triangle', 0.2);
+  setTimeout(() => playTone(1320, 0.18, 'triangle', 0.15), 50);
+}
+// 蓄力：低音 tick（每蓄满一段响一次）
+function sfxChargeTick(level) {
+  playTone(200 + level * 80, 0.05, 'square', 0.06);
+}
+// 掉落：下降音
+function sfxFall() {
+  const ctx = getAudio();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(440, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.6);
+  gain.gain.setValueAtTime(0.2, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + 0.6);
+}
+
+/* ===================== 游戏对象：蛋糕平台（4 种口味，水果逼真） ===================== */
+// 圆角立方体（方形蛋糕胚）
+function makeRoundedBox(size, height, radius) {
+  const shape = new THREE.Shape();
+  const s = size / 2;
+  const r = Math.max(0.01, Math.min(radius, s - 0.01));
+  shape.moveTo(-s + r, -s + r);
+  shape.lineTo(s - r, -s + r);
+  shape.quadraticCurveTo(s, -s + r, s, -s + r + r);
+  shape.lineTo(s, s - r);
+  shape.quadraticCurveTo(s, s, s - r, s);
+  shape.lineTo(-s + r, s);
+  shape.quadraticCurveTo(-s, s, -s, s - r);
+  shape.lineTo(-s, -s + r);
+  shape.quadraticCurveTo(-s, -s + r, -s + r, -s + r);
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: height, bevelEnabled: true,
+    bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 3, curveSegments: 6
+  });
+  geo.rotateX(-Math.PI / 2);
+  return geo;
+}
+
+// 4 种口味：多巴胺配色，鲜艳饱满可爱
+// sponge: 蛋糕胚颜色；cream: 奶油颜色；fruit: 水果类型
+const CAKE_FLAVORS = [
+  { sponge: 0xff6b9d, cream: 0xfff0f5, fruit: 'strawberry', name: '草莓' }, // 粉红
+  { sponge: 0xffb347, cream: 0xfff8e1, fruit: 'mango',     name: '芒果' }, // 橙黄
+  { sponge: 0xffeb3b, cream: 0xfffde7, fruit: 'lemon',     name: '柠檬' }, // 明黄
+  { sponge: 0x8d6e63, cream: 0xf5e6d3, fruit: 'chocolate',  name: '巧克力' } // 棕
+];
+
+// 心形 2D shape（用于心形蛋糕）
+function makeHeartShape(size) {
+  const s = size / 2;
+  const shape = new THREE.Shape();
+  shape.moveTo(0, s * 0.6);
+  shape.bezierCurveTo(0, s, -s, s, -s, s * 0.2);
+  shape.bezierCurveTo(-s, -s * 0.3, -s * 0.4, -s * 0.6, 0, -s);
+  shape.bezierCurveTo(s * 0.4, -s * 0.6, s, -s * 0.3, s, s * 0.2);
+  shape.bezierCurveTo(s, s, 0, s, 0, s * 0.6);
+  return shape;
+}
+
+// 逼真草莓：水滴形 + 顶部绿叶 + 表面小籽
+function makeStrawberry(scale = 1) {
+  const g = new THREE.Group();
+  // 主体：水滴形（球+锥）
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.13, 16, 16),
+    new THREE.MeshStandardMaterial({ color: 0xe53850, roughness: 0.35 })
+  );
+  body.scale.set(1, 1.25, 1);
+  body.castShadow = true;
+  const tip = new THREE.Mesh(
+    new THREE.ConeGeometry(0.13, 0.15, 16),
+    new THREE.MeshStandardMaterial({ color: 0xc1121f, roughness: 0.4 })
+  );
+  tip.rotation.x = Math.PI;
+  tip.position.y = -0.15;
+  g.add(body, tip);
+  // 顶部绿叶（4 片）
+  const leafMat = new THREE.MeshStandardMaterial({ color: 0x4c956c, roughness: 0.5 });
+  for (let i = 0; i < 4; i++) {
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.1, 4), leafMat);
+    const a = (i / 4) * Math.PI * 2;
+    leaf.position.set(Math.cos(a) * 0.06, 0.13, Math.sin(a) * 0.06);
+    leaf.rotation.z = -Math.PI / 3;
+    leaf.rotation.y = a;
+    g.add(leaf);
+  }
+  // 表面小籽（黄色小点）
+  const seedMat = new THREE.MeshStandardMaterial({ color: 0xfff3c4, roughness: 0.3 });
+  for (let i = 0; i < 8; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const h = (Math.random() - 0.5) * 0.2;
+    const seed = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), seedMat);
+    seed.position.set(Math.cos(a) * 0.11, h, Math.sin(a) * 0.11);
+    g.add(seed);
+  }
+  g.scale.setScalar(scale);
+  return g;
+}
+
+// 逼真芒果：椭圆 + 渐变色 + 顶部小柄
+function makeMango(scale = 1) {
+  const g = new THREE.Group();
+  // 主体：椭圆球，上黄下红渐变效果用两种材质拼接
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.16, 20, 20),
+    new THREE.MeshStandardMaterial({ color: 0xffb627, roughness: 0.4 })
+  );
+  body.scale.set(0.85, 1.15, 0.85);
+  body.castShadow = true;
+  g.add(body);
+  // 红色底部（成熟）
+  const bottom = new THREE.Mesh(
+    new THREE.SphereGeometry(0.13, 16, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+    new THREE.MeshStandardMaterial({ color: 0xe53850, roughness: 0.4 })
+  );
+  bottom.scale.set(0.85, 1.15, 0.85);
+  bottom.position.y = -0.03;
+  g.add(bottom);
+  // 顶部小柄
+  const stem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.015, 0.02, 0.06, 8),
+    new THREE.MeshStandardMaterial({ color: 0x6d4c41, roughness: 0.6 })
+  );
+  stem.position.y = 0.18;
+  g.add(stem);
+  g.scale.setScalar(scale);
+  return g;
+}
+
+// 逼真柠檬：椭圆 + 两端小尖 + 表面纹理
+function makeLemon(scale = 1) {
+  const g = new THREE.Group();
+  // 主体：椭球
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.14, 20, 20),
+    new THREE.MeshStandardMaterial({ color: 0xffeb3b, roughness: 0.45 })
+  );
+  body.scale.set(0.9, 1.1, 0.9);
+  body.castShadow = true;
+  g.add(body);
+  // 两端小尖
+  const tipMat = new THREE.MeshStandardMaterial({ color: 0xfdd835, roughness: 0.45 });
+  const tipTop = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.08, 12), tipMat);
+  tipTop.position.y = 0.16;
+  const tipBot = tipTop.clone();
+  tipBot.rotation.x = Math.PI;
+  tipBot.position.y = -0.16;
+  g.add(tipTop, tipBot);
+  // 表面小凹点（用小球凸起模拟纹理）
+  const dotMat = new THREE.MeshStandardMaterial({ color: 0xfbc02d, roughness: 0.5 });
+  for (let i = 0; i < 10; i++) {
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 6), dotMat);
+    const a = Math.random() * Math.PI * 2;
+    const h = (Math.random() - 0.5) * 0.25;
+    dot.position.set(Math.cos(a) * 0.12, h, Math.sin(a) * 0.12);
+    g.add(dot);
+  }
+  g.scale.setScalar(scale);
+  return g;
+}
+
+// 巧克力块：方块 + 顶部高光
+function makeChocolatePiece(scale = 1) {
+  const g = new THREE.Group();
+  // 主体：圆角小方块
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(0.22, 0.1, 0.16),
+    new THREE.MeshStandardMaterial({ color: 0x4e342e, roughness: 0.35, metalness: 0.1 })
+  );
+  body.castShadow = true;
+  g.add(body);
+  // 顶部高光层
+  const top = new THREE.Mesh(
+    new THREE.BoxGeometry(0.22, 0.02, 0.16),
+    new THREE.MeshStandardMaterial({ color: 0x795548, roughness: 0.2, metalness: 0.2 })
+  );
+  top.position.y = 0.06;
+  g.add(top);
+  // 表面纹路（分割线）
+  const lineMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.5 });
+  const line = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.03, 0.16), lineMat);
+  line.position.y = 0.06;
+  g.add(line);
+  g.scale.setScalar(scale);
+  return g;
+}
+
+// 根据口味创建顶部水果装饰
+function makeFruitTopping(flavor) {
+  const g = new THREE.Group();
+  const count = 2 + Math.floor(Math.random() * 2); // 2-3 个水果
+  for (let i = 0; i < count; i++) {
+    let fruit;
+    if (flavor.fruit === 'strawberry') fruit = makeStrawberry(1);
+    else if (flavor.fruit === 'mango') fruit = makeMango(1);
+    else if (flavor.fruit === 'lemon') fruit = makeLemon(1);
+    else fruit = makeChocolatePiece(1);
+    // 围绕中心摆放，避免正中央（给柴犬留位置）
+    const a = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+    const r = 0.5 + Math.random() * 0.15;
+    fruit.position.set(Math.cos(a) * r, 0.1, Math.sin(a) * r);
+    fruit.rotation.y = Math.random() * Math.PI * 2;
+    g.add(fruit);
+  }
+  return g;
+}
+
+// 三角形 2D shape（用于三角形蛋糕）
+function makeTriangleShape(size) {
+  const s = size / 2;
+  const shape = new THREE.Shape();
+  shape.moveTo(0, s);
+  shape.lineTo(s * 0.95, -s * 0.7);
+  shape.lineTo(-s * 0.95, -s * 0.7);
+  shape.closePath();
+  return shape;
+}
+
+// step = { dir, dist }：从本平台到下一平台的方向与中心距
+function makePlatform(x, z, step) {
+  const flavor = CAKE_FLAVORS[Math.floor(Math.random() * CAKE_FLAVORS.length)];
+  const group = new THREE.Group();
+  const size = CONFIG.platformSize;
+  const height = CONFIG.platformHeight;
+
+  // ---- 蛋糕胚：4 种形状随机（圆形/方形/心形/三角形） ----
+  // 蛋糕胚做得更薄（height-0.3），让柴犬站在顶面时不被遮挡
+  const shapeType = Math.floor(Math.random() * 4); // 0:圆 1:方 2:心 3:三角
+  let bodyGeo;
+  if (shapeType === 0) {
+    bodyGeo = new THREE.CylinderGeometry(size / 2, size / 2, height - 0.3, 28);
+  } else if (shapeType === 1) {
+    bodyGeo = makeRoundedBox(size, height - 0.3, 0.3);
+  } else if (shapeType === 2) {
+    const heartShape = makeHeartShape(size * 1.05);
+    bodyGeo = new THREE.ExtrudeGeometry(heartShape, {
+      depth: height - 0.3, bevelEnabled: true,
+      bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 3, curveSegments: 8
+    });
+    bodyGeo.rotateX(-Math.PI / 2);
+  } else {
+    // 三角形蛋糕
+    const triShape = makeTriangleShape(size * 1.1);
+    bodyGeo = new THREE.ExtrudeGeometry(triShape, {
+      depth: height - 0.3, bevelEnabled: true,
+      bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 3, curveSegments: 4
+    });
+    bodyGeo.rotateX(-Math.PI / 2);
+  }
+  const bodyMat = new THREE.MeshStandardMaterial({ color: flavor.sponge, roughness: 0.55, metalness: 0 });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = -(height - 0.3) / 2; // 胚体顶面在 y=0
+  body.castShadow = true;
+  body.receiveShadow = true;
+  group.add(body);
+
+  // ---- 奶油层（扁圆盘，贴在胚体顶面） ----
+  const cream = new THREE.Mesh(
+    new THREE.CylinderGeometry(size / 2 - 0.1, size / 2 - 0.1, 0.12, 28),
+    new THREE.MeshStandardMaterial({ color: flavor.cream, roughness: 0.35 })
+  );
+  cream.position.y = -0.06;
+  cream.castShadow = true;
+  cream.receiveShadow = true;
+  group.add(cream);
+
+  // ---- 顶部逼真水果（围绕摆放，中央留给柴犬） ----
+  const topping = makeFruitTopping(flavor);
+  group.add(topping);
+
+  group.position.set(x, 0, z); // 胚体顶面在 y=0
+  scene.add(group);
+  // shapeName 用于加分判定：三角形加分多
+  const shapeName = ['circle', 'square', 'heart', 'triangle'][shapeType];
+  return {
+    mesh: group, x, z, size: CONFIG.platformSize,
+    dir: step.dir, dist: step.dist, flavor, shapeName,
+    // 复杂模式用：移动参数
+    moveAxis: null, moveRange: 0, moveSpeed: 0, movePhase: 0,
+    baseX: x, baseZ: z
+  };
+}
+
+// 随机生成下一步方向与距离（距离随机，有长有短）
+function randomStep(prevDir) {
+  let dir;
+  if (!prevDir) {
+    dir = Math.random() < 0.5 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+  } else if (Math.random() < 0.5) {
+    dir = prevDir.clone();
+  } else {
+    dir = prevDir.x !== 0 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
+  }
+  // 距离随机：扩大范围，有长有短，节奏更明显
+  const gap = CONFIG.minGap + Math.random() * (CONFIG.maxGap - CONFIG.minGap);
+  return { dir, dist: CONFIG.platformSize + gap };
+}
+
+/* ===================== 游戏对象：4 个可爱主角 ===================== */
+// 4 个可选主角：不倒翁 / 猫咪 / 小柴犬 / 兔子
+// 统一接口：返回 Group，userData 包含动画所需的部件
+// 所有主角都暴露：body, head, legs(数组), tail, earL, earR, eyeL, eyeR, mouth, browL, browR, topKnot
+const PLAYER_TYPES = [
+  { id: 'daruma', name: '不倒翁', emoji: '🎎', color: 0xff5252 },
+  { id: 'cat',    name: '猫咪',   emoji: '🐱', color: 0xf0a868 },
+  { id: 'shiba',  name: '柴犬',   emoji: '🐶', color: 0xe8a04c },
+  { id: 'bunny',  name: '兔子',   emoji: '🐰', color: 0xffffff }
+];
+let currentPlayerType = 'daruma'; // 当前选择的主角
+
+// 通用：创建眼睛（黑球 + 白色高光）
+function makeEye(z, darkMat) {
+  const eg = new THREE.Group();
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.05, 14, 14), darkMat);
+  const hi = new THREE.Mesh(
+    new THREE.SphereGeometry(0.018, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, emissive: 0xffffff, emissiveIntensity: 0.5 })
+  );
+  hi.position.set(0.02, 0.02, 0.04);
+  eg.add(ball, hi);
+  eg.position.z = z;
+  return eg;
+}
+
+// 通用：创建半圆笑脸（默认隐藏，开心时显示）
+function makeMouth() {
+  const mouth = new THREE.Mesh(
+    new THREE.TorusGeometry(0.05, 0.018, 8, 12, Math.PI),
+    new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.4 })
+  );
+  mouth.rotation.x = Math.PI;
+  mouth.rotation.z = -Math.PI / 2;
+  mouth.scale.set(0, 0, 0);
+  return mouth;
+}
+
+// 通用：创建眉毛
+function makeBrow(browMat) {
+  const brow = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.015, 0.02), browMat);
+  brow.rotation.z = 0.2;
+  return brow;
+}
+
+// 主角 1：不倒翁
+function makeDaruma() {
+  const g = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff5252, roughness: 0.4, metalness: 0.1 });
+  const faceMat = new THREE.MeshStandardMaterial({ color: 0xfff8e8, roughness: 0.5 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.2 });
+  const cheekMat = new THREE.MeshStandardMaterial({ color: 0xff8fa3, roughness: 0.5 });
+  const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd93d, roughness: 0.3, metalness: 0.5 });
+
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.45, 28, 24), bodyMat);
+  body.scale.set(1, 1.1, 1);
+  body.position.y = 0.42;
+  body.castShadow = true; body.receiveShadow = true;
+  g.add(body);
+
+  const face = new THREE.Mesh(new THREE.SphereGeometry(0.36, 24, 24), faceMat);
+  face.scale.set(0.5, 1.05, 1);
+  face.position.set(0.18, 0.45, 0);
+  g.add(face);
+
+  const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.08, 28, 1, true), goldMat);
+  belt.position.y = 0.42;
+  g.add(belt);
+
+  const head = new THREE.Group();
+  head.position.set(0, 0.45, 0);
+  g.add(head);
+
+  const eyeL = makeEye(0.12, darkMat); eyeL.position.set(0.32, 0.05, 0.12);
+  const eyeR = makeEye(-0.12, darkMat); eyeR.position.set(0.32, 0.05, -0.12);
+  head.add(eyeL, eyeR);
+
+  const browMat = new THREE.MeshStandardMaterial({ color: 0x4a2c2a, roughness: 0.6 });
+  const browL = makeBrow(browMat); browL.position.set(0.32, 0.16, 0.12);
+  const browR = makeBrow(browMat); browR.position.set(0.32, 0.16, -0.12); browR.rotation.z = -0.2;
+  head.add(browL, browR);
+
+  const cheekGeo = new THREE.SphereGeometry(0.07, 12, 12);
+  const cheekL = new THREE.Mesh(cheekGeo, cheekMat); cheekL.position.set(0.3, -0.08, 0.22);
+  const cheekR = cheekL.clone(); cheekR.position.z = -0.22;
+  head.add(cheekL, cheekR);
+
+  const mouth = makeMouth(); mouth.position.set(0.42, -0.08, 0);
+  head.add(mouth);
+
+  const topKnot = new THREE.Group();
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), goldMat); ball.position.y = 0.05;
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.1, 8), goldMat); cone.position.y = 0.13;
+  topKnot.add(ball, cone);
+  topKnot.position.set(0, 0.9, 0);
+  topKnot.castShadow = true;
+  g.add(topKnot);
+
+  const baseRing = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.04, 8, 28),
+    new THREE.MeshStandardMaterial({ color: 0xc1121f, roughness: 0.5 }));
+  baseRing.rotation.x = Math.PI / 2;
+  baseRing.position.y = 0.02;
+  g.add(baseRing);
+
+  const legs = [], tail = new THREE.Group(), earL = new THREE.Group(), earR = new THREE.Group();
+  g.add(tail, earL, earR);
+  g.userData = { body, head, legs, tail, earL, earR, eyeL, eyeR, mouth, browL, browR, topKnot, type: 'daruma' };
+  g.rotation.y = -Math.PI / 2;
+  scene.add(g);
+  return g;
+}
+
+// 主角 2：猫咪
+function makeCat() {
+  const g = new THREE.Group();
+  const furMat = new THREE.MeshStandardMaterial({ color: 0xf0a868, roughness: 0.6 });
+  const creamMat = new THREE.MeshStandardMaterial({ color: 0xfff6e6, roughness: 0.6 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.2 });
+  const cheekMat = new THREE.MeshStandardMaterial({ color: 0xff8fa3, roughness: 0.5 });
+  const pinkMat = new THREE.MeshStandardMaterial({ color: 0xffb3c1, roughness: 0.5 });
+
+  // 身体：圆球坐姿
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.38, 24, 24), furMat);
+  body.scale.set(1, 1.05, 1.1);
+  body.position.y = 0.36;
+  body.castShadow = true;
+  g.add(body);
+
+  // 肚皮
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), creamMat);
+  belly.scale.set(0.6, 0.8, 0.5);
+  belly.position.set(0.15, 0.28, 0);
+  g.add(belly);
+
+  // 头
+  const head = new THREE.Group();
+  head.position.set(0.32, 0.62, 0);
+  g.add(head);
+  const headMain = new THREE.Mesh(new THREE.SphereGeometry(0.32, 24, 24), furMat);
+  headMain.castShadow = true;
+  head.add(headMain);
+  // 脸
+  const face = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 16), creamMat);
+  face.scale.set(0.5, 0.9, 1);
+  face.position.set(0.12, -0.02, 0);
+  head.add(face);
+
+  // 眼睛
+  const eyeL = makeEye(0.12, darkMat); eyeL.position.set(0.2, 0.06, 0.12);
+  const eyeR = makeEye(-0.12, darkMat); eyeR.position.set(0.2, 0.06, -0.12);
+  head.add(eyeL, eyeR);
+
+  // 眉毛
+  const browMat = new THREE.MeshStandardMaterial({ color: 0x8a5a3b, roughness: 0.6 });
+  const browL = makeBrow(browMat); browL.position.set(0.2, 0.16, 0.12);
+  const browR = makeBrow(browMat); browR.position.set(0.2, 0.16, -0.12); browR.rotation.z = -0.2;
+  head.add(browL, browR);
+
+  // 脸颊
+  const cheekGeo = new THREE.SphereGeometry(0.06, 10, 10);
+  const cheekL = new THREE.Mesh(cheekGeo, cheekMat); cheekL.position.set(0.18, -0.05, 0.18);
+  const cheekR = cheekL.clone(); cheekR.position.z = -0.18;
+  head.add(cheekL, cheekR);
+
+  // 鼻子（粉色小三角）
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.04, 3), pinkMat);
+  nose.position.set(0.3, -0.02, 0);
+  nose.rotation.x = Math.PI / 2;
+  head.add(nose);
+
+  // 嘴
+  const mouth = makeMouth(); mouth.position.set(0.32, -0.1, 0);
+  head.add(mouth);
+
+  // 猫耳朵（三角锥）
+  const earGeo = new THREE.ConeGeometry(0.12, 0.22, 4);
+  const earL = new THREE.Mesh(earGeo, furMat);
+  earL.position.set(-0.02, 0.3, 0.16);
+  earL.rotation.z = 0.3; earL.castShadow = true;
+  const earR = earL.clone();
+  earR.position.z = -0.16; earR.rotation.z = -0.3;
+  head.add(earL, earR);
+
+  // 胡须（细线）
+  const whiskerMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+  for (let i = 0; i < 3; i++) {
+    const wL = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.2, 4), whiskerMat);
+    wL.position.set(0.3, -0.04 + i * 0.03, 0.22);
+    wL.rotation.z = Math.PI / 2;
+    head.add(wL);
+    const wR = wL.clone(); wR.position.z = -0.22;
+    head.add(wR);
+  }
+
+  // 尾巴：长弯尾
+  const tail = new THREE.Group();
+  const tail1 = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.05, 0.4, 10), furMat);
+  tail1.position.set(0, 0.2, 0);
+  tail1.rotation.z = -1.0;
+  tail1.castShadow = true;
+  const tail2 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.25, 10), furMat);
+  tail2.position.set(0.2, 0.45, 0);
+  tail2.rotation.z = 0.8;
+  tail2.castShadow = true;
+  tail.add(tail1, tail2);
+  tail.position.set(-0.35, 0.35, 0);
+  g.add(tail);
+
+  // 四条腿（短小）
+  const legGeo = new THREE.CylinderGeometry(0.08, 0.07, 0.2, 10);
+  const legPositions = [[0.15, 0.1, 0.14], [0.15, 0.1, -0.14], [-0.15, 0.1, 0.14], [-0.15, 0.1, -0.14]];
+  const legs = [];
+  legPositions.forEach(p => {
+    const leg = new THREE.Mesh(legGeo, furMat);
+    leg.position.set(...p);
+    leg.castShadow = true;
+    g.add(leg);
+    legs.push(leg);
+  });
+
+  const topKnot = new THREE.Group();
+  g.add(topKnot);
+  g.userData = { body, head, legs, tail, earL, earR, eyeL, eyeR, mouth, browL, browR, topKnot, type: 'cat' };
+  g.rotation.y = -Math.PI / 2;
+  scene.add(g);
+  return g;
+}
+
+// 主角 3：小柴犬
+function makeShiba() {
+  const g = new THREE.Group();
+  const furMat = new THREE.MeshStandardMaterial({ color: 0xe8a04c, roughness: 0.6 });
+  const creamMat = new THREE.MeshStandardMaterial({ color: 0xfff6e6, roughness: 0.6 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.2 });
+  const cheekMat = new THREE.MeshStandardMaterial({ color: 0xffb3c1, roughness: 0.6 });
+
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.36, 20, 20), furMat);
+  body.scale.set(1.1, 0.95, 1.25);
+  body.position.y = 0.36;
+  body.castShadow = true;
+  g.add(body);
+
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), creamMat);
+  belly.scale.set(1, 0.6, 1);
+  belly.position.set(0, 0.28, 0);
+  g.add(belly);
+
+  const head = new THREE.Group();
+  head.position.set(0.4, 0.62, 0);
+  g.add(head);
+  const headMain = new THREE.Mesh(new THREE.SphereGeometry(0.3, 20, 20), furMat);
+  headMain.castShadow = true;
+  head.add(headMain);
+  const face = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 16), creamMat);
+  face.scale.set(0.9, 0.9, 0.5);
+  face.position.set(0.08, -0.02, 0);
+  head.add(face);
+  const snout = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 12), creamMat);
+  snout.scale.set(1, 0.7, 0.8);
+  snout.position.set(0.28, -0.08, 0);
+  head.add(snout);
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), darkMat);
+  nose.position.set(0.36, -0.04, 0);
+  head.add(nose);
+
+  const eyeL = makeEye(0.12, darkMat); eyeL.position.set(0.2, 0.08, 0.12);
+  const eyeR = makeEye(-0.12, darkMat); eyeR.position.set(0.2, 0.08, -0.12);
+  head.add(eyeL, eyeR);
+
+  const browMat = new THREE.MeshStandardMaterial({ color: 0xc8843d, roughness: 0.6 });
+  const browL = makeBrow(browMat); browL.position.set(0.2, 0.16, 0.12);
+  const browR = makeBrow(browMat); browR.position.set(0.2, 0.16, -0.12); browR.rotation.z = -0.2;
+  head.add(browL, browR);
+
+  const cheekGeo = new THREE.SphereGeometry(0.06, 10, 10);
+  const cheekL = new THREE.Mesh(cheekGeo, cheekMat); cheekL.position.set(0.18, -0.05, 0.18);
+  const cheekR = cheekL.clone(); cheekR.position.z = -0.18;
+  head.add(cheekL, cheekR);
+
+  const mouth = makeMouth(); mouth.position.set(0.34, -0.1, 0);
+  head.add(mouth);
+
+  const earGeo = new THREE.ConeGeometry(0.1, 0.2, 4);
+  const earL = new THREE.Mesh(earGeo, furMat);
+  earL.position.set(-0.05, 0.28, 0.15);
+  earL.rotation.x = -0.3; earL.rotation.z = 0.2; earL.castShadow = true;
+  const earR = earL.clone();
+  earR.position.z = -0.15; earR.rotation.z = -0.2;
+  head.add(earL, earR);
+
+  const tail = new THREE.Group();
+  const tail1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.25, 10), furMat);
+  tail1.position.set(0, 0.1, 0); tail1.rotation.z = -0.5; tail1.castShadow = true;
+  const tail2 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.2, 10), furMat);
+  tail2.position.set(0.1, 0.25, 0); tail2.rotation.z = 0.5; tail2.castShadow = true;
+  tail.add(tail1, tail2);
+  tail.position.set(-0.4, 0.4, 0);
+  g.add(tail);
+
+  const legGeo = new THREE.CylinderGeometry(0.09, 0.08, 0.28, 12);
+  const legPositions = [[0.18, 0.14, 0.16], [0.18, 0.14, -0.16], [-0.18, 0.14, 0.16], [-0.18, 0.14, -0.16]];
+  const legs = [];
+  legPositions.forEach(p => {
+    const leg = new THREE.Mesh(legGeo, furMat);
+    leg.position.set(...p);
+    leg.castShadow = true;
+    g.add(leg);
+    legs.push(leg);
+  });
+
+  const topKnot = new THREE.Group();
+  g.add(topKnot);
+  g.userData = { body, head, legs, tail, earL, earR, eyeL, eyeR, mouth, browL, browR, topKnot, type: 'shiba' };
+  g.rotation.y = -Math.PI / 2;
+  scene.add(g);
+  return g;
+}
+
+// 主角 4：兔子
+function makeBunny() {
+  const g = new THREE.Group();
+  const furMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 });
+  const creamMat = new THREE.MeshStandardMaterial({ color: 0xfff5f5, roughness: 0.7 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.2 });
+  const cheekMat = new THREE.MeshStandardMaterial({ color: 0xffb3c1, roughness: 0.5 });
+  const pinkMat = new THREE.MeshStandardMaterial({ color: 0xff8fa3, roughness: 0.5 });
+
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.36, 20, 20), furMat);
+  body.scale.set(1, 1.0, 1.2);
+  body.position.y = 0.36;
+  body.castShadow = true;
+  g.add(body);
+
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), creamMat);
+  belly.scale.set(0.8, 0.7, 1);
+  belly.position.set(0.1, 0.28, 0);
+  g.add(belly);
+
+  const head = new THREE.Group();
+  head.position.set(0.32, 0.66, 0);
+  g.add(head);
+  const headMain = new THREE.Mesh(new THREE.SphereGeometry(0.3, 20, 20), furMat);
+  headMain.castShadow = true;
+  head.add(headMain);
+  const face = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 16), creamMat);
+  face.scale.set(0.9, 0.9, 0.5);
+  face.position.set(0.08, -0.02, 0);
+  head.add(face);
+
+  // 兔子长耳朵（两个长椭球）
+  const earGeo = new THREE.CapsuleGeometry(0.07, 0.4, 6, 12);
+  const earL = new THREE.Mesh(earGeo, furMat);
+  earL.position.set(-0.05, 0.45, 0.12);
+  earL.rotation.z = 0.2; earL.castShadow = true;
+  // 耳朵内侧粉色
+  const innerL = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.3, 4, 8), pinkMat);
+  innerL.position.set(0.02, 0, 0.04);
+  earL.add(innerL);
+  const earR = earL.clone();
+  earR.position.z = -0.12; earR.rotation.z = -0.2;
+  head.add(earL, earR);
+
+  const eyeL = makeEye(0.12, darkMat); eyeL.position.set(0.2, 0.08, 0.12);
+  const eyeR = makeEye(-0.12, darkMat); eyeR.position.set(0.2, 0.08, -0.12);
+  head.add(eyeL, eyeR);
+
+  const browMat = new THREE.MeshStandardMaterial({ color: 0xd0a0b0, roughness: 0.6 });
+  const browL = makeBrow(browMat); browL.position.set(0.2, 0.16, 0.12);
+  const browR = makeBrow(browMat); browR.position.set(0.2, 0.16, -0.12); browR.rotation.z = -0.2;
+  head.add(browL, browR);
+
+  const cheekGeo = new THREE.SphereGeometry(0.06, 10, 10);
+  const cheekL = new THREE.Mesh(cheekGeo, cheekMat); cheekL.position.set(0.18, -0.05, 0.18);
+  const cheekR = cheekL.clone(); cheekR.position.z = -0.18;
+  head.add(cheekL, cheekR);
+
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.04, 10, 10), pinkMat);
+  nose.position.set(0.34, -0.02, 0);
+  head.add(nose);
+
+  const mouth = makeMouth(); mouth.position.set(0.34, -0.12, 0);
+  head.add(mouth);
+
+  // 圆球尾巴
+  const tail = new THREE.Group();
+  const tailBall = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 12), furMat);
+  tailBall.position.set(-0.4, 0.4, 0);
+  tailBall.castShadow = true;
+  tail.add(tailBall);
+  g.add(tail);
+
+  const legGeo = new THREE.CylinderGeometry(0.09, 0.08, 0.28, 12);
+  const legPositions = [[0.18, 0.14, 0.16], [0.18, 0.14, -0.16], [-0.18, 0.14, 0.16], [-0.18, 0.14, -0.16]];
+  const legs = [];
+  legPositions.forEach(p => {
+    const leg = new THREE.Mesh(legGeo, furMat);
+    leg.position.set(...p);
+    leg.castShadow = true;
+    g.add(leg);
+    legs.push(leg);
+  });
+
+  const topKnot = new THREE.Group();
+  g.add(topKnot);
+  g.userData = { body, head, legs, tail, earL, earR, eyeL, eyeR, mouth, browL, browR, topKnot, type: 'bunny' };
+  g.rotation.y = -Math.PI / 2;
+  scene.add(g);
+  return g;
+}
+
+// 根据类型创建主角
+function makePlayer(type) {
+  if (type === 'cat') return makeCat();
+  if (type === 'shiba') return makeShiba();
+  if (type === 'bunny') return makeBunny();
+  return makeDaruma();
+}
+
+/* ===================== 落地烟花粒子系统 ===================== */
+// 简易粒子：一组小球，落地成功时从柴犬脚下四散，受重力下落 + 渐隐
+const fireworks = []; // 每个粒子 { mesh, vel, life, maxLife }
+const FW_COLORS = [0xff6b9d, 0xffd93d, 0x6bcf7f, 0x6bcfff, 0xc4b5fd, 0xff9800];
+
+function spawnFireworks(pos) {
+  const count = 18;
+  for (let i = 0; i < count; i++) {
+    const color = FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)];
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.05, 8, 8),
+      new THREE.MeshStandardMaterial({
+        color, roughness: 0.3, emissive: color, emissiveIntensity: 0.6,
+        transparent: true, opacity: 1
+      })
+    );
+    mesh.position.copy(pos);
+    mesh.position.y += 0.05;
+    // 随机方向 + 向上的初速度（xz 平面四散，y 向上）
+    const a = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+    const speed = 1.2 + Math.random() * 1.0;
+    const vel = new THREE.Vector3(
+      Math.cos(a) * speed,
+      1.5 + Math.random() * 1.0,
+      Math.sin(a) * speed
+    );
+    scene.add(mesh);
+    fireworks.push({ mesh, vel, life: 0, maxLife: 0.7 + Math.random() * 0.3 });
+  }
+}
+
+function updateFireworks(dt) {
+  for (let i = fireworks.length - 1; i >= 0; i--) {
+    const p = fireworks[i];
+    p.life += dt;
+    // 重力
+    p.vel.y -= 6 * dt;
+    p.mesh.position.addScaledVector(p.vel, dt);
+    // 渐隐
+    const t = p.life / p.maxLife;
+    p.mesh.material.opacity = Math.max(0, 1 - t);
+    p.mesh.scale.setScalar(Math.max(0.1, 1 - t * 0.5));
+    if (p.life >= p.maxLife) {
+      scene.remove(p.mesh);
+      p.mesh.geometry.dispose();
+      p.mesh.material.dispose();
+      fireworks.splice(i, 1);
+    }
+  }
+}
+
+/* ===================== 游戏状态 ===================== */
+let platforms = [];
+let currentIndex = 0;
+let player;                // 柴犬 Group
+let playerParts = null;    // 柴犬部件引用
+let score = 0;
+let charging = false;
+let chargeStart = 0;
+let lastChargeTickLevel = 0;
+let jumping = false;
+let jumpT = 0;
+let jumpFrom = new THREE.Vector3();
+let jumpTo = new THREE.Vector3();
+let jumpDir = new THREE.Vector3(1, 0, 0);
+let falling = false;
+let fallVelocity = 0;
+let gameOver = false;
+let cameraTarget = new THREE.Vector3();
+const cameraDesired = new THREE.Vector3();
+let breatheT = 0;          // 待机呼吸动画时间
+let happyTimer = 0;        // 落地开心表情剩余时间
+let gameMode = 'easy';     // 'easy' | 'hard'，复杂模式蛋糕会移动
+
+const scoreEl = document.getElementById('score');
+const powerBar = document.getElementById('power-bar');
+const powerFill = document.getElementById('power-fill');
+const gameOverEl = document.getElementById('game-over');
+const finalScoreEl = document.getElementById('final-score');
+
+// 在链条最前端追加一个平台
+function spawnNextPlatform() {
+  const last = platforms[platforms.length - 1];
+  const nx = last.x + last.dir.x * last.dist;
+  const nz = last.z + last.dir.z * last.dist;
+  const p = makePlatform(nx, nz, randomStep(last.dir));
+  // 复杂模式：前方平台（非起点）会左右移动
+  if (gameMode === 'hard' && platforms.length > 0) {
+    // 沿垂直于跳跃方向的轴左右摆动
+    if (p.dir.x !== 0) {
+      p.moveAxis = 'z'; // 跳 +x 方向，蛋糕沿 z 摆
+    } else {
+      p.moveAxis = 'x';
+    }
+    p.moveRange = 0.8 + Math.random() * 0.7; // 摆动幅度
+    p.moveSpeed = 0.8 + Math.random() * 0.8;  // 摆动速度
+    p.movePhase = Math.random() * Math.PI * 2;
+  }
+  platforms.push(p);
+}
+// 保证前方始终有 2 个平台
+function ensureAhead() {
+  while (platforms.length < currentIndex + 3) spawnNextPlatform();
+}
+// 身后只保留 2 个平台
+function trimPlatforms() {
+  while (currentIndex > 2) {
+    const p = platforms.shift();
+    scene.remove(p.mesh);
+    currentIndex--;
+  }
+}
+
+// 初始化 / 重置游戏
+function resetGame() {
+  platforms.forEach(p => scene.remove(p.mesh));
+  if (player) scene.remove(player);
+  platforms = [];
+  score = 0;
+  scoreEl.textContent = '0';
+
+  // 起点平台（第一次跳之前不需要身后平台）
+  platforms.push(makePlatform(0, 0, randomStep(null)));
+  currentIndex = 0;
+  ensureAhead(); // 前方补 2 个，共 3 个
+
+  jumpDir = platforms[currentIndex].dir.clone();
+
+  const stand = platforms[currentIndex];
+  player = makePlayer(currentPlayerType);
+  playerParts = player.userData;
+  player.position.set(stand.x, 0, stand.z);
+
+  charging = false;
+  jumping = false;
+  falling = false;
+  gameOver = false;
+  powerBar.classList.remove('show');
+  gameOverEl.classList.remove('show');
+
+  updateCamAngleTarget();
+  camAngle = camAngleTarget;
+  cameraTarget.copy(player.position).addScaledVector(jumpDir, CONFIG.cameraLookAhead);
+  cameraTarget.y = 0;
+  camera.position.set(
+    cameraTarget.x + CAMERA_RADIUS * Math.cos(camAngle),
+    CAMERA_HEIGHT,
+    cameraTarget.z + CAMERA_RADIUS * Math.sin(camAngle)
+  );
+  camera.lookAt(cameraTarget);
+}
+
+/* ===================== 跳跃逻辑 ===================== */
+function startCharge() {
+  if (gameOver || jumping || falling || charging) return;
+  getAudio(); // 用户手势激活音频上下文
+  charging = true;
+  chargeStart = performance.now();
+  lastChargeTickLevel = 0;
+  powerBar.classList.add('show');
+}
+
+function releaseJump() {
+  if (!charging || gameOver) return;
+  charging = false;
+  powerBar.classList.remove('show');
+
+  const ratio = Math.min((performance.now() - chargeStart) / (CONFIG.chargeTime * 1000), 1);
+  const distance = CONFIG.jumpBaseDistance +
+    (CONFIG.jumpMaxDistance - CONFIG.jumpBaseDistance) * ratio;
+
+  jumpFrom.copy(player.position);
+  jumpTo.copy(player.position).addScaledVector(jumpDir, distance);
+  jumpT = 0;
+  jumping = true;
+  sfxJump();
+}
+
+function checkLanding() {
+  for (let i = 0; i < platforms.length; i++) {
+    const p = platforms[i];
+    const half = p.size / 2;
+    if (
+      Math.abs(player.position.x - p.x) <= half &&
+      Math.abs(player.position.z - p.z) <= half
+    ) {
+      if (i <= currentIndex) return 'same';
+      currentIndex = i;
+      // 加分规则：
+      // - 三角形蛋糕 +2 分（难度高）
+      // - 巧克力蛋糕 +0.5 分
+      // - 复杂模式跳到移动中的蛋糕 +5 分
+      // - 其他 +1 分
+      let gained = 1;
+      if (p.shapeName === 'triangle') gained = 2;
+      else if (p.flavor && p.flavor.fruit === 'chocolate') gained = 0.5;
+      // 复杂模式 + 移动中的蛋糕 +5
+      if (gameMode === 'hard' && p.wasMoving) gained = 5;
+      score += gained;
+      scoreEl.textContent = (Math.round(score * 10) / 10).toString();
+      trimPlatforms();
+      ensureAhead();
+      jumpDir = platforms[currentIndex].dir.clone();
+      updateCamAngleTarget();
+      return 'next';
+    }
+  }
+  return 'miss';
+}
+
+/* ===================== 排行榜（localStorage） ===================== */
+const LB_KEY = 'shiba_jump_leaderboard';
+const PLAYER_ID = '好运柴柴';
+
+// 读取历史排行榜（按分数降序，最多 5 条）
+function loadLeaderboard() {
+  try {
+    const raw = localStorage.getItem(LB_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.sort((a, b) => b.score - a.score).slice(0, 5) : [];
+  } catch (e) { return []; }
+}
+// 保存一条成绩，返回更新后的排行榜
+function saveScore(score) {
+  const list = loadLeaderboard();
+  list.push({
+    score,
+    id: PLAYER_ID,
+    time: new Date().toLocaleString('zh-CN', { hour12: false })
+  });
+  list.sort((a, b) => b.score - a.score);
+  const top5 = list.slice(0, 5);
+  try { localStorage.setItem(LB_KEY, JSON.stringify(top5)); } catch (e) {}
+  return top5;
+}
+// 渲染排行榜 DOM
+function renderLeaderboard(list) {
+  const ol = document.getElementById('leaderboard-list');
+  if (!list.length) {
+    ol.innerHTML = '<div class="empty">还没有记录，跳一个吧 ✿</div>';
+    return;
+  }
+  ol.innerHTML = list.map((item, i) => `
+    <li>
+      <div class="rank">${i + 1}</div>
+      <div class="info">
+        <div class="id">${item.id}</div>
+        <div class="time">${item.time}</div>
+      </div>
+      <div class="pts">${item.score}</div>
+    </li>
+  `).join('');
+}
+
+function endGame() {
+  gameOver = true;
+  finalScoreEl.textContent = String(score);
+  const top5 = saveScore(score);
+  renderLeaderboard(top5);
+  gameOverEl.classList.add('show');
+}
+
+/* ===================== 输入 ===================== */
+window.addEventListener('mousedown', e => {
+  if (e.target.id === 'restart-btn') return;
+  startCharge();
+});
+window.addEventListener('mouseup', releaseJump);
+window.addEventListener('touchstart', e => {
+  if (e.target.id === 'restart-btn') return;
+  e.preventDefault();
+  startCharge();
+}, { passive: false });
+window.addEventListener('touchend', releaseJump);
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (gameOver) { resetGame(); return; }
+    startCharge();
+  }
+});
+window.addEventListener('keyup', e => {
+  if (e.code === 'Space') releaseJump();
+});
+
+document.getElementById('restart-btn').addEventListener('click', resetGame);
+
+// 模式切换按钮
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    gameMode = btn.dataset.mode;
+    resetGame(); // 切换模式后重开
+  });
+});
+
+// 主角选择面板：渲染 4 个角色 + 点击切换
+(function renderPlayerPicker() {
+  const grid = document.querySelector('.picker-grid');
+  PLAYER_TYPES.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'picker-item' + (p.id === currentPlayerType ? ' active' : '');
+    item.dataset.id = p.id;
+    item.innerHTML = `<span class="picker-emoji">${p.emoji}</span><span class="picker-name">${p.name}</span>`;
+    item.addEventListener('click', () => {
+      if (currentPlayerType === p.id) return;
+      currentPlayerType = p.id;
+      document.querySelectorAll('.picker-item').forEach(x => x.classList.remove('active'));
+      item.classList.add('active');
+      resetGame(); // 切换主角后重开
+    });
+    grid.appendChild(item);
+  });
+})();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ===================== 柴犬动画 ===================== */
+// 让柴犬朝向当前跳跃方向（xz 平面）
+// jumpDir 为 +x 或 +z：柴犬默认正面朝 +x（rotation.y = -π/2）
+// +x 方向：rotation.y = -π/2；+z 方向：rotation.y = 0
+function faceJumpDir(dt) {
+  const targetY = jumpDir.x !== 0 ? -Math.PI / 2 : 0;
+  const k = 1 - Math.exp(-12 * dt); // 转向稍快，避免拖泥带水
+  player.rotation.y += (targetY - player.rotation.y) * k;
+}
+
+// 表情控制：开心时眯眼 + 张嘴笑；普通时圆眼 + 闭嘴
+function setHappy(on) {
+  if (!playerParts) return;
+  const { eyeL, eyeR, mouth, browL, browR } = playerParts;
+  if (on) {
+    // 眯眼笑（眼睛变扁）+ 张嘴笑 + 眉毛放松
+    eyeL.scale.set(1.2, 0.3, 1);
+    eyeR.scale.set(1.2, 0.3, 1);
+    mouth.scale.set(1, 1, 1);
+    browL.rotation.z = 0.05;
+    browR.rotation.z = -0.05;
+    browL.position.y = 0.15;
+    browR.position.y = 0.15;
+  } else {
+    eyeL.scale.set(1, 1, 1);
+    eyeR.scale.set(1, 1, 1);
+    mouth.scale.set(0, 0, 0);
+    browL.rotation.z = 0.2;
+    browR.rotation.z = -0.2;
+    browL.position.y = 0.16;
+    browR.position.y = 0.16;
+  }
+}
+
+// 紧张表情（蓄力时）：眉毛挑起
+function setTense(ratio) {
+  if (!playerParts) return;
+  const { browL, browR } = playerParts;
+  browL.rotation.z = 0.2 + ratio * 0.4;
+  browR.rotation.z = -0.2 - ratio * 0.4;
+  browL.position.y = 0.16 + ratio * 0.04;
+  browR.position.y = 0.16 + ratio * 0.04;
+}
+
+// 蓄力姿态：不倒翁后仰摇摆；其他角色四脚微弯、身体下沉
+function applyChargePose(ratio) {
+  if (!playerParts) return;
+  const { body, head, topKnot, legs, tail } = playerParts;
+  if (playerParts.type === 'daruma') {
+    // 不倒翁：后仰蓄力
+    body.rotation.z = -ratio * 0.4;
+    if (topKnot) topKnot.rotation.z = -ratio * 0.4;
+  } else {
+    // 猫咪/柴犬/兔子：保持站立，四脚微弯，身体轻微下沉
+    body.scale.y = 1 - ratio * 0.05;
+    body.position.y = (body.userData.baseY || 0.36) - ratio * 0.04;
+    if (head) head.rotation.z = ratio * 0.1;
+    if (tail) tail.rotation.z = ratio * 0.5;
+    if (legs && legs.length) {
+      legs.forEach(leg => {
+        leg.scale.y = 1 - ratio * 0.12;
+      });
+    }
+  }
+}
+
+// 跳跃姿态：不倒翁前倾摇摆；其他角色身体舒展、腿微弯、尾巴上扬
+function applyJumpPose(t, dt) {
+  if (!playerParts) return;
+  const { body, topKnot, legs, tail } = playerParts;
+  if (playerParts.type === 'daruma') {
+    body.rotation.z = 0.15 + Math.sin(t * Math.PI * 4) * 0.1;
+    if (topKnot) topKnot.rotation.z = 0.2 + Math.sin(t * Math.PI * 4) * 0.15;
+  } else {
+    // 舒展拉长，腿微弯腾空，尾巴上扬摆动
+    body.scale.y = 1.05;
+    if (tail) tail.rotation.z = -0.6 + Math.sin(t * Math.PI * 4) * 0.2;
+    if (legs && legs.length) {
+      legs.forEach(leg => {
+        leg.scale.y = 0.75;
+      });
+    }
+  }
+}
+
+// 待机姿态：不倒翁左右摇摆；其他角色轻微呼吸 + 尾巴轻摇
+function applyIdlePose(dt) {
+  if (!playerParts) return;
+  const { body, topKnot, tail, legs } = playerParts;
+  breatheT += dt;
+  if (playerParts.type === 'daruma') {
+    body.rotation.z = Math.sin(breatheT * 1.5) * 0.06;
+    if (topKnot) topKnot.rotation.z = Math.sin(breatheT * 1.5) * 0.1;
+  } else {
+    const b = Math.sin(breatheT * 2) * 0.02;
+    body.scale.y = 1 + b;
+    if (tail) tail.rotation.z = Math.sin(breatheT * 3) * 0.15;
+    if (legs && legs.length) {
+      legs.forEach(leg => { leg.scale.y = 1; });
+    }
+  }
+}
+
+/* ===================== 主循环 ===================== */
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const tNow = performance.now() / 1000;
+
+  // 复杂模式：蛋糕左右移动（只移动当前平台之后的，不含当前所站平台）
+  if (gameMode === 'hard') {
+    for (let i = currentIndex + 1; i < platforms.length; i++) {
+      const p = platforms[i];
+      if (p.moveAxis) {
+        const offset = Math.sin(tNow * p.moveSpeed + p.movePhase) * p.moveRange;
+        if (p.moveAxis === 'x') {
+          p.x = p.baseX + offset;
+          p.mesh.position.x = p.x;
+        } else {
+          p.z = p.baseZ + offset;
+          p.mesh.position.z = p.z;
+        }
+        p.wasMoving = true; // 标记移动过，用于 +5 分判定
+      }
+    }
+  }
+
+  // 柴犬朝向：始终跟随当前跳跃方向（在 xz 平面平滑旋转）
+  if (player && !falling) faceJumpDir(dt);
+
+  // 蓄力：UI + 柴犬下蹲动画 + 紧张表情 + 阶段音效
+  if (charging) {
+    const ratio = Math.min((performance.now() - chargeStart) / (CONFIG.chargeTime * 1000), 1);
+    powerFill.style.width = (ratio * 100).toFixed(1) + '%';
+    applyChargePose(ratio);
+    setTense(ratio);
+    // 每 25% 响一次 tick
+    const level = Math.floor(ratio * 4);
+    if (level > lastChargeTickLevel && level > 0) {
+      sfxChargeTick(level);
+      lastChargeTickLevel = level;
+    }
+  } else if (!jumping && !falling && player) {
+    applyIdlePose(dt);
+    if (happyTimer <= 0) setTense(0); // 恢复普通眉毛
+  }
+
+  // 跳跃：抛物线 + 腿弯曲收起 + 朝向跳跃方向
+  if (jumping) {
+    jumpT += dt / CONFIG.jumpDuration;
+    const t = Math.min(jumpT, 1);
+    player.position.lerpVectors(jumpFrom, jumpTo, t);
+    player.position.y = 4 * CONFIG.jumpHeight * t * (1 - t);
+    applyJumpPose(t, dt);
+    faceJumpDir(dt); // 跳跃中始终朝向跳跃方向
+
+    if (t >= 1) {
+      jumping = false;
+      const result = checkLanding();
+      if (result === 'miss') {
+        falling = true;
+        fallVelocity = 0;
+        setHappy(false);
+        sfxFall();
+      } else {
+        player.position.y = 0;
+        setHappy(true);     // 成功落地：开心表情
+        happyTimer = 0.9;   // 持续 0.9 秒后恢复
+        // 脚下烟花：在柴犬脚下位置生成
+        spawnFireworks(player.position);
+        sfxLand();
+      }
+    }
+  }
+
+  // 烟花粒子更新
+  updateFireworks(dt);
+
+  // 开心表情计时：到时间恢复普通脸
+  if (happyTimer > 0) {
+    happyTimer -= dt;
+    if (happyTimer <= 0) setHappy(false);
+  }
+
+  // 掉落
+  if (falling) {
+    fallVelocity += CONFIG.gravity * dt;
+    player.position.y -= fallVelocity * dt;
+    player.rotation.x += 3 * dt;
+    player.rotation.z += 2 * dt;
+    if (player.position.y < -8) {
+      falling = false;
+      endGame();
+    }
+  }
+
+  // 相机平滑跟随
+  const k = 1 - Math.exp(-CONFIG.cameraFollowSpeed * dt);
+  cameraDesired.copy(player.position).addScaledVector(jumpDir, CONFIG.cameraLookAhead);
+  cameraDesired.y = 0;
+  cameraTarget.lerp(cameraDesired, k);
+
+  let da = camAngleTarget - camAngle;
+  da = Math.atan2(Math.sin(da), Math.cos(da));
+  camAngle += da * k;
+
+  camera.position.set(
+    cameraTarget.x + CAMERA_RADIUS * Math.cos(camAngle),
+    CAMERA_HEIGHT,
+    cameraTarget.z + CAMERA_RADIUS * Math.sin(camAngle)
+  );
+  camera.lookAt(cameraTarget);
+
+  renderer.render(scene, camera);
+}
+
+resetGame();
+animate();
+</script>
+</body>
+</html>

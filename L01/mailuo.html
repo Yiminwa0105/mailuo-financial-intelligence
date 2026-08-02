@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>脉络 Financial Intelligence · 可追溯的金融研究时间线</title>
+<style>
+  :root {
+    --navy-900: #0b1f3a;
+    --navy-800: #12294d;
+    --navy-700: #1c3a66;
+    --navy-600: #2a4d85;
+    --graphite-900: #1f2733;
+    --graphite-700: #3a4556;
+    --graphite-500: #64707f;
+    --graphite-300: #b9c1cc;
+    --graphite-200: #dde2e8;
+    --graphite-100: #eef1f5;
+    --bg: #f4f6f9;
+    --white: #ffffff;
+    --green: #2f7d5b;
+    --green-bg: #e6f2ec;
+    --red: #a8433f;
+    --red-bg: #f6e9e8;
+    --amber: #9a6b1f;
+    --amber-bg: #f7efdd;
+    --blue: #2a4d85;
+    --blue-bg: #e8eef7;
+    --purple: #5a4d8a;
+    --purple-bg: #eeeaf7;
+    --teal: #2c6e74;
+    --teal-bg: #e4f0f1;
+    --shadow-sm: 0 1px 3px rgba(11, 31, 58, 0.08);
+    --shadow-md: 0 8px 24px rgba(11, 31, 58, 0.10);
+    --shadow-lg: 0 20px 56px rgba(11, 31, 58, 0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: "Segoe UI", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--graphite-900);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ============ 顶栏 ============ */
+  .topbar {
+    background: linear-gradient(120deg, var(--navy-900) 0%, var(--navy-800) 60%, var(--navy-700) 100%);
+    color: #fff;
+    padding: 0 32px;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: var(--shadow-md);
+  }
+
+  .brand { display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
+
+  .brand .logo {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #3d6ab0, #1c3a66);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 16px; color: #fff;
+    border: 1px solid rgba(255,255,255,0.25);
+    align-self: center;
+  }
+
+  .brand h1 { font-size: 19px; font-weight: 700; letter-spacing: 1px; }
+  .brand .sub { font-size: 11px; letter-spacing: 2.5px; color: rgba(255,255,255,0.55); text-transform: uppercase; }
+
+  .search-box {
+    flex: 1;
+    max-width: 480px;
+    position: relative;
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.22);
+    background: rgba(255,255,255,0.10);
+    color: #fff;
+    font-size: 13px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+  }
+
+  .search-box input::placeholder { color: rgba(255,255,255,0.45); }
+
+  .search-box input:focus {
+    outline: none;
+    background: rgba(255,255,255,0.16);
+    border-color: rgba(255,255,255,0.5);
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.08);
+  }
+
+  .search-box .icon {
+    position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+    color: rgba(255,255,255,0.5); font-size: 14px; pointer-events: none;
+  }
+
+  .quick-topics { display: flex; gap: 8px; margin-left: auto; }
+
+  .quick-chip {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: transparent;
+    color: rgba(255,255,255,0.8);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .quick-chip:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+  .quick-chip.active {
+    background: #fff;
+    color: var(--navy-800);
+    border-color: #fff;
+    font-weight: 600;
+  }
+
+  /* ============ 主布局 ============ */
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 32px 64px;
+    align-items: start;
+  }
+
+  /* ============ 左侧栏 ============ */
+  .sidebar { position: sticky; top: 92px; display: flex; flex-direction: column; gap: 20px; }
+
+  .panel {
+    background: var(--white);
+    border: 1px solid var(--graphite-200);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .panel-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--graphite-100);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--graphite-500);
+    text-transform: uppercase;
+  }
+
+  .panel-body { padding: 18px; }
+
+  /* 主题概览 */
+  .topic-name { font-size: 20px; font-weight: 700; color: var(--navy-900); margin-bottom: 10px; }
+
+  .topic-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+
+  .topic-tag {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--blue-bg);
+    color: var(--blue);
+    font-weight: 600;
+  }
+
+  .topic-desc { font-size: 13px; color: var(--graphite-700); margin-bottom: 16px; }
+
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .metric-card {
+    background: var(--graphite-100);
+    border-radius: 8px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--navy-600);
+  }
+
+  .metric-card .m-label { font-size: 11px; color: var(--graphite-500); margin-bottom: 2px; }
+  .metric-card .m-value { font-size: 16px; font-weight: 700; color: var(--graphite-900); font-variant-numeric: tabular-nums; }
+  .metric-card .m-delta { font-size: 11px; font-weight: 600; margin-top: 2px; }
+  .metric-card .m-delta.up { color: var(--green); }
+  .metric-card .m-delta.down { color: var(--red); }
+
+  /* 筛选 */
+  .filter-group { margin-bottom: 18px; }
+  .filter-group:last-child { margin-bottom: 0; }
+
+  .filter-title {
+    font-size: 12px; font-weight: 700; color: var(--graphite-700);
+    margin-bottom: 8px; letter-spacing: 0.5px;
+  }
+
+  .type-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .type-chip {
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--graphite-200);
+    background: var(--white);
+    color: var(--graphite-700);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+  }
+
+  .type-chip:hover { border-color: var(--navy-600); color: var(--navy-600); }
+
+  .type-chip.on {
+    background: var(--navy-800);
+    border-color: var(--navy-800);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .range-filters { display: flex; gap: 6px; }
+
+  .range-btn {
+    flex: 1;
+    padding: 7px 0;
+    border-radius: 6px;
+    border: 1px solid var(--graphite-200);
+    background: var(--white);
+    color: var(--graphite-700);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+    text-align: center;
+  }
+
+  .range-btn:hover { border-color: var(--navy-600); color: var(--navy-600); }
+
+  .range-btn.on {
+    background: var(--navy-800);
+    border-color: var(--navy-800);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* 我的标记 */
+  .mark-stats { display: flex; gap: 10px; }
+
+  .mark-stat {
+    flex: 1;
+    text-align: center;
+    padding: 12px 0;
+    border-radius: 8px;
+    background: var(--graphite-100);
+  }
+
+  .mark-stat .num { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .mark-stat .lbl { font-size: 11px; color: var(--graphite-500); margin-top: 2px; }
+  .mark-stat.fav .num { color: var(--amber); }
+  .mark-stat.imp .num { color: var(--red); }
+
+  /* ============ 时间线 ============ */
+  .timeline-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .timeline-head h2 { font-size: 17px; font-weight: 700; color: var(--navy-900); }
+
+  .timeline-head .count { font-size: 12px; color: var(--graphite-500); }
+
+  .timeline { position: relative; padding-left: 36px; }
+
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 11px; top: 8px; bottom: 8px;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--navy-600), var(--graphite-300));
+    border-radius: 2px;
+  }
+
+  .tl-item { position: relative; margin-bottom: 18px; animation: tlIn 0.35s ease both; }
+
+  @keyframes tlIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .tl-node {
+    position: absolute;
+    left: -36px; top: 20px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 2px solid var(--node-color, var(--navy-600));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    z-index: 1;
+  }
+
+  .tl-card {
+    background: var(--white);
+    border: 1px solid var(--graphite-200);
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .tl-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--graphite-300);
+    transform: translateY(-1px);
+  }
+
+  .tl-card.important { border-left: 3px solid var(--red); }
+  .tl-card.important.flash { animation: impFlash 0.6s ease; }
+
+  @keyframes impFlash {
+    0% { box-shadow: 0 0 0 0 rgba(168, 67, 63, 0.35); }
+    100% { box-shadow: 0 0 0 14px rgba(168, 67, 63, 0); }
+  }
+
+  .tl-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+
+  .tl-time {
+    font-size: 12px;
+    color: var(--graphite-500);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.3px;
+  }
+
+  .type-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.5px;
+  }
+
+  .type-earnings { background: var(--blue-bg); color: var(--blue); }
+  .type-announce { background: var(--teal-bg); color: var(--teal); }
+  .type-macro { background: var(--purple-bg); color: var(--purple); }
+  .type-news { background: var(--graphite-100); color: var(--graphite-700); }
+  .type-report { background: var(--green-bg); color: var(--green); }
+  .type-opinion { background: var(--amber-bg); color: var(--amber); }
+
+  .impact-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 999px;
+  }
+
+  .impact-pos { background: var(--green-bg); color: var(--green); }
+  .impact-neg { background: var(--red-bg); color: var(--red); }
+  .impact-neu { background: var(--graphite-100); color: var(--graphite-500); }
+
+  .imp-flag {
+    display: none;
+    font-size: 11px; font-weight: 700;
+    color: var(--red);
+    align-items: center; gap: 3px;
+  }
+
+  .tl-card.important .imp-flag { display: inline-flex; }
+
+  .tl-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--graphite-900);
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+
+  .tl-title:hover { color: var(--navy-600); }
+
+  .tl-summary {
+    font-size: 13px;
+    color: var(--graphite-700);
+    margin-bottom: 10px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .tl-summary .hl { font-weight: 700; color: var(--navy-800); }
+  .tl-summary .hl-pos { font-weight: 700; color: var(--green); }
+  .tl-summary .hl-neg { font-weight: 700; color: var(--red); }
+
+  .tl-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px dashed var(--graphite-200);
+  }
+
+  .tl-source {
+    font-size: 12px; color: var(--graphite-500);
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  .tl-source a {
+    color: var(--navy-600); text-decoration: none; font-weight: 600;
+  }
+
+  .tl-source a:hover { text-decoration: underline; }
+
+  .tl-actions { display: flex; gap: 6px; }
+
+  .act-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 11px;
+    border-radius: 6px;
+    border: 1px solid var(--graphite-200);
+    background: var(--white);
+    color: var(--graphite-500);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+  }
+
+  .act-btn:hover { border-color: var(--navy-600); color: var(--navy-600); }
+
+  .act-btn.faved {
+    background: var(--amber-bg); border-color: var(--amber); color: var(--amber);
+    font-weight: 600;
+  }
+
+  .act-btn.imped {
+    background: var(--red-bg); border-color: var(--red); color: var(--red);
+    font-weight: 600;
+  }
+
+  .act-btn.pop { animation: pop 0.3s ease; }
+
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 64px 20px;
+    background: var(--white);
+    border: 1px dashed var(--graphite-300);
+    border-radius: 12px;
+    color: var(--graphite-500);
+  }
+
+  .empty-state .big { font-size: 32px; margin-bottom: 10px; }
+
+  /* ============ 详情抽屉 ============ */
+  .drawer-mask {
+    position: fixed; inset: 0;
+    background: rgba(11, 31, 58, 0.45);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 90;
+  }
+
+  .drawer-mask.open { opacity: 1; pointer-events: auto; }
+
+  .drawer {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 460px;
+    max-width: 92vw;
+    background: var(--white);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .drawer.open { transform: translateX(0); }
+
+  .drawer-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--graphite-100);
+    background: linear-gradient(120deg, var(--navy-900), var(--navy-700));
+    color: #fff;
+  }
+
+  .drawer-header .d-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .drawer-header .d-time { font-size: 12px; color: rgba(255,255,255,0.65); }
+  .drawer-header h3 { font-size: 17px; font-weight: 700; line-height: 1.5; }
+
+  .drawer-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .drawer-close:hover { background: rgba(255,255,255,0.25); }
+
+  .drawer-body { flex: 1; overflow-y: auto; padding: 22px 24px; }
+
+  .drawer-section { margin-bottom: 22px; }
+
+  .drawer-section .d-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    color: var(--graphite-500); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .drawer-section .d-text { font-size: 14px; color: var(--graphite-900); line-height: 1.8; }
+
+  .d-source-box {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--graphite-100);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+
+  .d-source-box .s-name { font-size: 13px; font-weight: 600; color: var(--graphite-900); }
+  .d-source-box .s-type { font-size: 11px; color: var(--graphite-500); margin-top: 1px; }
+
+  .d-source-link {
+    font-size: 12px; font-weight: 600;
+    color: var(--navy-600); text-decoration: none;
+    padding: 6px 12px;
+    border: 1px solid var(--navy-600);
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .d-source-link:hover { background: var(--navy-600); color: #fff; }
+
+  .d-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .d-tag {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--blue-bg);
+    color: var(--blue);
+    font-weight: 600;
+  }
+
+  .drawer-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--graphite-100);
+    display: flex; gap: 10px;
+  }
+
+  .drawer-footer .act-btn { flex: 1; justify-content: center; padding: 10px 0; font-size: 13px; }
+
+  /* ============ Toast ============ */
+  .toast-wrap {
+    position: fixed;
+    bottom: 28px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    display: flex; flex-direction: column; gap: 8px;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .toast {
+    background: var(--graphite-900);
+    color: #fff;
+    font-size: 13px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    animation: toastIn 0.25s ease, toastOut 0.3s ease 1.8s forwards;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .toast .t-icon { font-weight: 700; }
+  .toast.fav .t-icon { color: #e8b34b; }
+  .toast.imp .t-icon { color: #e07b76; }
+  .toast.info .t-icon { color: #7fa8d9; }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes toastOut {
+    to { opacity: 0; transform: translateY(8px); }
+  }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; }
+    .quick-topics { display: none; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- 顶栏 -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">脉</div>
+      <div>
+        <h1>脉络</h1>
+        <div class="sub">Financial Intelligence</div>
+      </div>
+    </div>
+    <div class="search-box">
+      <span class="icon">⌕</span>
+      <input type="text" id="searchInput" placeholder="搜索公司、行业或宏观主题，如：宁德时代 / 人工智能 / 美国降息" />
+    </div>
+    <nav class="quick-topics" id="quickTopics"></nav>
+  </header>
+
+  <div class="layout">
+    <!-- 左侧栏 -->
+    <aside class="sidebar">
+      <!-- 主题概览 -->
+      <section class="panel">
+        <div class="panel-header">研究主题概览</div>
+        <div class="panel-body">
+          <div class="topic-name" id="topicName">—</div>
+          <div class="topic-tags" id="topicTags"></div>
+          <p class="topic-desc" id="topicDesc"></p>
+          <div class="metric-grid" id="metricGrid"></div>
+        </div>
+      </section>
+
+      <!-- 筛选 -->
+      <section class="panel">
+        <div class="panel-header">Timeline 筛选</div>
+        <div class="panel-body">
+          <div class="filter-group">
+            <div class="filter-title">信息类型</div>
+            <div class="type-filters" id="typeFilters"></div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-title">时间范围</div>
+            <div class="range-filters" id="rangeFilters"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 我的标记 -->
+      <section class="panel">
+        <div class="panel-header">我的研究留痕</div>
+        <div class="panel-body">
+          <div class="mark-stats">
+            <div class="mark-stat fav">
+              <div class="num" id="favCount">0</div>
+              <div class="lbl">已收藏</div>
+            </div>
+            <div class="mark-stat imp">
+              <div class="num" id="impCount">0</div>
+              <div class="lbl">标为重要</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- 右侧时间线 -->
+    <main>
+      <div class="timeline-head">
+        <h2>事件时间线</h2>
+        <span class="count" id="tlCount"></span>
+      </div>
+      <div class="timeline" id="timeline"></div>
+    </main>
+  </div>
+
+  <!-- 详情抽屉 -->
+  <div class="drawer-mask" id="drawerMask"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-header">
+      <button class="drawer-close" id="drawerClose">✕</button>
+      <div class="d-meta">
+        <span class="type-badge" id="dType"></span>
+        <span class="impact-badge" id="dImpact"></span>
+        <span class="d-time" id="dTime"></span>
+      </div>
+      <h3 id="dTitle"></h3>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section">
+        <div class="d-label">事件摘要</div>
+        <div class="d-text" id="dSummary"></div>
+      </div>
+      <div class="drawer-section">
+        <div class="d-label">信息来源</div>
+        <div class="d-source-box">
+          <div>
+            <div class="s-name" id="dSourceName"></div>
+            <div class="s-type" id="dSourceType"></div>
+          </div>
+          <a class="d-source-link" id="dSourceLink" href="#" target="_blank" rel="noopener">查看原文 ↗</a>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="d-label">关联标签</div>
+        <div class="d-tags" id="dTags"></div>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="act-btn" id="dFavBtn">☆ 收藏</button>
+      <button class="act-btn" id="dImpBtn">⚑ 标记重要</button>
+    </div>
+  </aside>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ================= 数据 ================= */
+
+  var TYPE_META = {
+    earnings: { label: "财报", icon: "▤", color: "#2a4d85", cls: "type-earnings" },
+    announce: { label: "公告", icon: "▣", color: "#2c6e74", cls: "type-announce" },
+    macro:    { label: "宏观", icon: "◈", color: "#5a4d8a", cls: "type-macro" },
+    news:     { label: "新闻", icon: "◉", color: "#64707f", cls: "type-news" },
+    report:   { label: "研报", icon: "▥", color: "#2f7d5b", cls: "type-report" },
+    opinion:  { label: "观点", icon: "✎", color: "#9a6b1f", cls: "type-opinion" }
+  };
+
+  var IMPACT_META = {
+    pos: { label: "偏利好", cls: "impact-pos" },
+    neg: { label: "偏利空", cls: "impact-neg" },
+    neu: { label: "中性", cls: "impact-neu" }
+  };
+
+  var RANGES = [
+    { key: "all", label: "全部" },
+    { key: "7d", label: "近 7 天", days: 7 },
+    { key: "30d", label: "近 30 天", days: 30 },
+    { key: "90d", label: "近 90 天", days: 90 }
+  ];
+
+  var TOPICS = {
+    "宁德时代": {
+      tags: ["新能源", "动力电池", "A股龙头", "出海"],
+      desc: "全球动力电池龙头，业务覆盖动力电池、储能电池与材料回收。研究主线围绕排产与出货、碳酸锂成本、海外产能落地与储能第二增长曲线展开。",
+      metrics: [
+        { label: "最新市值", value: "1.18 万亿", delta: "+2.4% 本周", dir: "up" },
+        { label: "全球装机份额", value: "37.9%", delta: "+1.2pct 同比", dir: "up" },
+        { label: "碳酸锂价格", value: "9.6 万元/吨", delta: "-18% 年内", dir: "down" },
+        { label: "机构评级", value: "买入 32 家", delta: "目标价区间上移", dir: "up" }
+      ]
+    },
+    "人工智能": {
+      tags: ["AI算力", "大模型", "半导体", "产业趋势"],
+      desc: "人工智能产业主题，跟踪大模型迭代、算力资本开支、AI 应用商业化落地与监管动态，覆盖海外科技巨头与国内产业链。",
+      metrics: [
+        { label: "全球AI资本开支", value: "$3,200亿", delta: "+42% 同比", dir: "up" },
+        { label: "英伟达年内涨幅", value: "+58%", delta: "算力主线延续", dir: "up" },
+        { label: "国产大模型数量", value: "300+", delta: "同质化竞争加剧", dir: "down" },
+        { label: "机构关注度", value: "极高", delta: "研报密度第一", dir: "up" }
+      ]
+    },
+    "美国降息": {
+      tags: ["美联储", "货币政策", "全球流动性", "宏观"],
+      desc: "美联储货币政策周期主题，跟踪 FOMC 决议、通胀与就业数据、利率点阵图变化及其对全球资产价格的传导影响。",
+      metrics: [
+        { label: "联邦基金利率", value: "4.25–4.50%", delta: "年内已降 75bp", dir: "down" },
+        { label: "CPI 同比", value: "2.6%", delta: "回落趋缓", dir: "down" },
+        { label: "9月降息概率", value: "68%", delta: "+12pct 周内", dir: "up" },
+        { label: "10Y美债收益率", value: "3.92%", delta: "-8bp 本周", dir: "down" }
+      ]
+    }
+  };
+
+  var EVENTS = [
+    /* ---------- 宁德时代 ---------- */
+    {
+      id: "e01", topic: "宁德时代", type: "earnings", impact: "pos",
+      time: "2026-07-28 19:30",
+      title: "宁德时代发布 2026 年中报：净利润同比增长 28%，储能收入翻倍",
+      summary: "上半年实现营收 1,892 亿元，同比 +16%；归母净利润 305 亿元，同比 +28%。其中储能电池收入 412 亿元，同比 +103%，成为第二增长曲线。毛利率 26.8%，环比提升 1.5pct，主要受益于碳酸锂成本下行与神行 Pro 电池放量。管理层在业绩会上表示全年出货指引上调至 580GWh。",
+      brief: "中报营收 <span class='hl'>1,892 亿元 (+16%)</span>，净利润 <span class='hl-pos'>305 亿元 (+28%)</span>，储能收入同比 <span class='hl-pos'>+103%</span>，全年出货指引上调至 580GWh。",
+      source: { name: "宁德时代 2026 年半年度报告", type: "公司公告 · 巨潮资讯", url: "https://www.cninfo.com.cn" },
+      tags: ["中报", "储能", "毛利率", "出货指引"]
+    },
+    {
+      id: "e02", topic: "宁德时代", type: "announce", impact: "pos",
+      time: "2026-07-22 08:15",
+      title: "公告：匈牙利德布勒森工厂二期投产，欧洲本地化产能达 60GWh",
+      summary: "公司公告匈牙利基地二期产线正式投产，新增产能 28GWh，欧洲总产能提升至 60GWh。该基地主要配套奔驰、宝马与 Stellantis 的长期订单，本地化交付可规避欧盟碳关税与本地化率要求，预计 2027 年欧洲收入占比将提升至 25%。",
+      brief: "匈牙利二期投产，欧洲产能提升至 <span class='hl'>60GWh</span>，配套奔驰、宝马长单，规避欧盟本地化率要求，2027 年欧洲收入占比预计达 <span class='hl-pos'>25%</span>。",
+      source: { name: "宁德时代海外产能进展公告", type: "上交所公告", url: "https://www.sse.com.cn" },
+      tags: ["欧洲产能", "出海", "匈牙利基地"]
+    },
+    {
+      id: "e03", topic: "宁德时代", type: "report", impact: "pos",
+      time: "2026-07-18 10:00",
+      title: "中金研报：上调目标价至 320 元，储能业务估值体系重构",
+      summary: "中金公司发布深度报告，认为市场仍按制造业逻辑定价宁德时代，忽视其储能系统集成的类公用事业属性。报告将储能业务单独给予 25x PE 估值，上调 12 个月目标价至 320 元，对应 2027 年 22 倍市盈率，维持“跑赢行业”评级。",
+      brief: "中金认为储能应按<span class='hl'>类公用事业</span>估值，单独给予 25x PE，目标价上调至 <span class='hl-pos'>320 元</span>，维持“跑赢行业”。",
+      source: { name: "中金公司研究部", type: "券商研报", url: "https://www.cicc.com" },
+      tags: ["目标价", "储能估值", "中金"]
+    },
+    {
+      id: "e04", topic: "宁德时代", type: "macro", impact: "neg",
+      time: "2026-07-15 09:45",
+      title: "欧盟对华电动车反补贴税终裁落地，动力电池出口成本预期上升",
+      summary: "欧盟委员会公布对华电动车反补贴税终裁结果，平均税率 21.3%。虽然直接征税对象为整车，但市场担忧欧盟后续将本地化要求延伸至电池环节，短期对动力电池直接出口形成压制，中长期利好已有欧洲本地产能的头部厂商。",
+      brief: "欧盟反补贴税终裁平均税率 <span class='hl-neg'>21.3%</span>，短期压制电池出口预期，中长期<span class='hl'>利好已有欧洲本地产能的头部厂商</span>。",
+      source: { name: "欧盟委员会官方公报", type: "政策文件", url: "https://ec.europa.eu" },
+      tags: ["欧盟关税", "反补贴", "本地化"]
+    },
+    {
+      id: "e05", topic: "宁德时代", type: "news", impact: "neu",
+      time: "2026-07-10 14:20",
+      title: "碳酸锂期货跌破 9.5 万元/吨，创近三年新低",
+      summary: "广期所碳酸锂主力合约盘中跌破 9.5 万元/吨，年内跌幅扩大至 18%。上游锂盐厂减产挺价，但盐湖提锂新增供给持续释放。对电池厂而言，原材料成本下行改善盈利，但也引发市场对行业需求增速的担忧。",
+      brief: "碳酸锂跌破 <span class='hl-neg'>9.5 万元/吨</span>，年内 -18%。成本下行<span class='hl-pos'>改善电池厂盈利</span>，但需求增速担忧升温。",
+      source: { name: "财新网", type: "财经媒体", url: "https://www.caixin.com" },
+      tags: ["碳酸锂", "原材料", "成本"]
+    },
+    {
+      id: "e06", topic: "宁德时代", type: "opinion", impact: "neu",
+      time: "2026-07-06 07:50",
+      title: "基金经理观点：动力电池进入“剩者为王”阶段，龙头溢价将持续",
+      summary: "某头部公募新能源基金经理在季报观点中指出，动力电池行业二线厂商产能出清加速，CR3 份额回升至 78%。行业从“产能竞赛”转向“现金流竞赛”，具备技术代差与海外产能的龙头将享受确定性溢价，但需警惕储能价格战对盈利中枢的侵蚀。",
+      brief: "二线厂商出清加速，CR3 回升至 <span class='hl'>78%</span>。行业转向现金流竞赛，龙头享确定性溢价；<span class='hl-neg'>警惕储能价格战</span>侵蚀盈利。",
+      source: { name: "基金定期报告 · 基金经理观点", type: "公募季报", url: "https://fund.eastmoney.com" },
+      tags: ["竞争格局", "行业出清", "基金经理"]
+    },
+    {
+      id: "e07", topic: "宁德时代", type: "announce", impact: "neu",
+      time: "2026-06-27 18:00",
+      title: "公告：拟发行不超过 50 亿元绿色公司债，用于换电网络建设",
+      summary: "公司拟发行绿色公司债券不超过 50 亿元，期限 5 年，募集资金主要投向“骐骥换电”网络扩建及电池银行运营。截至 6 月底，公司已建成换电站 1,200 座，计划 2027 年底达到 3,000 座。",
+      brief: "拟发行 <span class='hl'>50 亿元</span>绿色公司债投向换电网络，已建成换电站 1,200 座，2027 年底目标 <span class='hl'>3,000 座</span>。",
+      source: { name: "宁德时代董事会公告", type: "上交所公告", url: "https://www.sse.com.cn" },
+      tags: ["绿色债券", "换电", "电池银行"]
+    },
+    {
+      id: "e08", topic: "宁德时代", type: "news", impact: "pos",
+      time: "2026-06-19 11:05",
+      title: "宁德时代与特斯拉续约：2027-2030 年北美储能电芯长单落地",
+      summary: "据外媒报道，宁德时代与特斯拉签署 2027-2030 年储能电芯供应框架协议，供应规模约 120GWh，主要配套 Megapack 产线。协议采用技术授权+电芯供应的混合模式，规避美国 IRA 法案对 FEOC 的限制。",
+      brief: "与特斯拉签署 2027-2030 储能长单约 <span class='hl-pos'>120GWh</span>，采用技术授权+电芯供应混合模式，规避 IRA 法案 FEOC 限制。",
+      source: { name: "路透社", type: "国际媒体", url: "https://www.reuters.com" },
+      tags: ["特斯拉", "储能长单", "IRA"]
+    },
+    {
+      id: "e09", topic: "宁德时代", type: "macro", impact: "pos",
+      time: "2026-06-12 09:30",
+      title: "国内 5 月新能源汽车渗透率首破 55%，以旧换新政策延续",
+      summary: "中汽协数据显示，5 月国内新能源汽车零售渗透率达 55.3%，首次突破 55% 关口。发改委表示汽车以旧换新补贴资金已使用过半，政策将延续至 2027 年，预计全年新能源车销量 1,550 万辆，同比 +22%，对动力电池需求形成坚实支撑。",
+      brief: "5 月新能源渗透率首破 <span class='hl-pos'>55%</span>，以旧换新延续至 2027 年，全年销量预期 <span class='hl'>1,550 万辆 (+22%)</span>。",
+      source: { name: "中汽协 / 国家发改委", type: "行业数据", url: "http://www.caam.org.cn" },
+      tags: ["渗透率", "以旧换新", "需求"]
+    },
+    {
+      id: "e10", topic: "宁德时代", type: "report", impact: "neg",
+      time: "2026-05-30 15:40",
+      title: "摩根士丹利：警惕储能价格战，下调行业盈利预测 8%",
+      summary: "摩根士丹利报告指出，国内储能系统集成中标价格已降至 0.62 元/Wh，同比下跌 35%，行业进入微利竞争阶段。报告下调 2027 年全行业储能业务盈利预测 8%，但强调宁德时代凭借直流侧系统能力与海外订单结构，盈利韧性显著强于同业，维持“增持”评级。",
+      brief: "储能中标价降至 <span class='hl-neg'>0.62 元/Wh (-35%)</span>，大摩下调行业盈利预测 8%，但强调宁德盈利韧性强于同业，维持<span class='hl'>增持</span>。",
+      source: { name: "Morgan Stanley Research", type: "外资研报", url: "https://www.morganstanley.com" },
+      tags: ["储能价格战", "盈利预测", "大摩"]
+    },
+    {
+      id: "e11", topic: "宁德时代", type: "earnings", impact: "pos",
+      time: "2026-04-26 19:00",
+      title: "一季报点评：Q1 净利润 139 亿元超预期，经营性现金流创同期新高",
+      summary: "2026Q1 实现营收 897 亿元，同比 +14%；归母净利润 139 亿元，同比 +25%，超出市场预期 8%。经营性现金流净额 286 亿元，创一季度历史新高。研发费用 62 亿元，同比 +19%，骁遥增混电池与钠离子电池量产进度提前。",
+      brief: "Q1 净利润 <span class='hl-pos'>139 亿元 (+25%)</span> 超预期 8%，经营现金流 <span class='hl'>286 亿元</span>创同期新高，钠电量产提前。",
+      source: { name: "宁德时代 2026 年第一季度报告", type: "公司公告 · 巨潮资讯", url: "https://www.cninfo.com.cn" },
+      tags: ["一季报", "现金流", "钠电池"]
+    },
+    {
+      id: "e12", topic: "宁德时代", type: "opinion", impact: "neg",
+      time: "2026-04-15 08:30",
+      title: "产业专家观点：固态电池量产节奏或快于预期，液态体系面临估值重估",
+      summary: "某电池产业资深专家在行业峰会上表示，多家车企半固态车型 2027 年集中上市，若能量密度与成本曲线达标，现有液态锂电产能的估值逻辑将受到挑战。但宁德时代在全固态领域专利储备居全球前三，技术切换风险相对可控。",
+      brief: "半固态车型 2027 年集中上市，液态产能估值逻辑或受挑战；宁德全固态专利储备<span class='hl'>全球前三</span>，切换风险相对可控。",
+      source: { name: "中国电池产业创新联盟峰会", type: "行业会议纪要", url: "https://www.china-nengyuan.com" },
+      tags: ["固态电池", "技术切换", "风险"]
+    },
+    {
+      id: "e13", topic: "宁德时代", type: "news", impact: "pos",
+      time: "2026-03-08 16:45",
+      title: "洛阳钼业 KFM 铜钴矿放量，宁德时代锁定关键金属长协供应",
+      summary: "洛阳钼业公告旗下 KFM 项目一季度铜钴产量超预期，宁德时代通过参股与长协机制锁定钴中间品供应，保障高镍三元材料体系稳定。分析师认为上游资源布局使公司材料成本波动敞口小于同业约 15%。",
+      brief: "KFM 铜钴产量超预期，宁德锁定钴长协供应，材料成本波动敞口<span class='hl-pos'>小于同业约 15%</span>。",
+      source: { name: "上海证券报", type: "财经媒体", url: "https://www.cnstock.com" },
+      tags: ["上游资源", "钴", "供应链"]
+    },
+    {
+      id: "e14", topic: "宁德时代", type: "announce", impact: "pos",
+      time: "2026-02-14 09:00",
+      title: "公告：2025 年度分红方案每 10 股派 45.6 元，分红率提升至 55%",
+      summary: "公司董事会审议通过 2025 年度利润分配预案：每 10 股派发现金红利 45.6 元（含税），合计派现约 201 亿元，分红率由上年的 50% 提升至 55%。公司同时公告回购计划，拟以 20-30 亿元回购股份用于股权激励。",
+      brief: "每 10 股派 <span class='hl-pos'>45.6 元</span>，合计派现约 201 亿元，分红率提升至 <span class='hl'>55%</span>，另启动 20-30 亿元回购。",
+      source: { name: "宁德时代年度分红公告", type: "上交所公告", url: "https://www.sse.com.cn" },
+      tags: ["分红", "回购", "股东回报"]
+    },
+
+    /* ---------- 人工智能 ---------- */
+    {
+      id: "e21", topic: "人工智能", type: "earnings", impact: "pos",
+      time: "2026-07-30 05:00",
+      title: "微软 FY26Q4：Azure AI 收入同比 +96%，资本开支指引再上修",
+      summary: "微软公布 FY2026Q4 业绩，Azure 及其他云服务收入同比 +34%，其中 AI 服务贡献 16 个百分点。公司指引下一财年资本开支超 1,400 亿美元，继续领跑全球 AI 基建投资。管理层表示 AI 推理需求“看不到天花板”。",
+      brief: "Azure AI 收入 <span class='hl-pos'>+96%</span>，下财年资本开支指引超 <span class='hl'>1,400 亿美元</span>，推理需求“看不到天花板”。",
+      source: { name: "Microsoft Investor Relations", type: "公司财报", url: "https://www.microsoft.com/investor" },
+      tags: ["微软", "Azure", "资本开支"]
+    },
+    {
+      id: "e22", topic: "人工智能", type: "news", impact: "pos",
+      time: "2026-07-21 22:10",
+      title: "OpenAI 发布 GPT-6：推理成本下降 80%，Agent 能力成标配",
+      summary: "OpenAI 正式发布 GPT-6，官方称同等推理能力下成本较上代下降 80%，并原生支持多步 Agent 任务编排。多家 SaaS 公司同日宣布接入，市场预计 AI 应用层商业化将迎来拐点，token 消耗量进入指数级扩张阶段。",
+      brief: "GPT-6 推理成本 <span class='hl-pos'>下降 80%</span>，原生支持 Agent 编排，AI 应用商业化拐点预期升温，token 消耗进入指数扩张。",
+      source: { name: "The Information", type: "科技媒体", url: "https://www.theinformation.com" },
+      tags: ["GPT-6", "Agent", "推理成本"]
+    },
+    {
+      id: "e23", topic: "人工智能", type: "macro", impact: "neg",
+      time: "2026-07-08 03:30",
+      title: "美国商务部拟进一步收紧对华先进算力芯片出口管制",
+      summary: "据外媒报道，美国商务部正酝酿新一轮出口管制，拟将 H20 级别的降规芯片也纳入许可范围，并限制海外云厂商向中国客户提供大模型训练算力。国内算力租赁价格应声上涨，国产替代链条关注度显著提升。",
+      brief: "美方拟收紧降规芯片与云端训练算力管制，国内算力租赁价格上涨，<span class='hl'>国产替代链条</span>关注度提升。",
+      source: { name: "彭博社", type: "国际媒体", url: "https://www.bloomberg.com" },
+      tags: ["出口管制", "算力", "国产替代"]
+    },
+    {
+      id: "e24", topic: "人工智能", type: "report", impact: "pos",
+      time: "2026-06-25 09:20",
+      title: "华泰证券：AI 应用商业化元年，关注“收入可验证”标的",
+      summary: "华泰计算机团队发布中期策略，认为 2026 下半年 AI 投资主线将从算力基建转向应用落地，筛选标准为“AI 收入可拆分、可验证”。报告测算国内 AI 应用市场规模 2027 年将达 4,600 亿元，重点看好办公、编程、营销三大场景。",
+      brief: "AI 主线从算力转向应用，筛选标准为<span class='hl'>收入可验证</span>；2027 年国内 AI 应用市场预计 <span class='hl-pos'>4,600 亿元</span>。",
+      source: { name: "华泰证券研究所", type: "券商研报", url: "https://www.htsc.com.cn" },
+      tags: ["AI应用", "商业化", "中期策略"]
+    },
+    {
+      id: "e25", topic: "人工智能", type: "announce", impact: "neu",
+      time: "2026-06-05 17:30",
+      title: "国务院发布《人工智能+行动深化方案》：2028 年核心产业规模破 2 万亿",
+      summary: "国务院印发方案，提出到 2028 年人工智能核心产业规模突破 2 万亿元，智能终端普及率超 70%。方案明确支持大模型开源生态、行业高质量数据集建设与算力券补贴机制，并首次提出 AI 安全评估强制标准时间表。",
+      brief: "2028 年 AI 核心产业规模目标 <span class='hl-pos'>破 2 万亿</span>，支持开源生态与算力券补贴，首提 AI 安全评估强制标准时间表。",
+      source: { name: "中国政府网", type: "政策文件", url: "https://www.gov.cn" },
+      tags: ["AI政策", "产业规模", "算力券"]
+    },
+    {
+      id: "e26", topic: "人工智能", type: "opinion", impact: "neg",
+      time: "2026-05-18 20:00",
+      title: "知名投资人警示：AI  capex 回报率争议加剧，警惕算力泡沫化",
+      summary: "某知名对冲基金经理在公开信中测算，全球 AI 资本开支对应年化收入缺口约 5,000 亿美元，当前估值隐含过于乐观的渗透率假设。其认为算力链短期业绩无虞，但 2027 年订单能见度存疑，建议逐步向应用层与能源配套切换。",
+      brief: "测算 AI 资本开支年化收入缺口约 <span class='hl-neg'>5,000 亿美元</span>，算力链 2027 年订单能见度存疑，建议向<span class='hl'>应用层与能源配套</span>切换。",
+      source: { name: "投资者公开信 · 转载于华尔街见闻", type: "机构观点", url: "https://wallstreetcn.com" },
+      tags: ["AI泡沫", "资本开支", "风险警示"]
+    },
+
+    /* ---------- 美国降息 ---------- */
+    {
+      id: "e31", topic: "美国降息", type: "macro", impact: "pos",
+      time: "2026-07-31 02:00",
+      title: "FOMC 7 月议息：维持利率不变，声明暗示“9 月行动具备条件”",
+      summary: "美联储 7 月会议维持联邦基金利率 4.25%-4.50% 不变，符合预期。声明将通胀表述从“仍然偏高”调整为“向目标进一步靠近”，鲍威尔在发布会上表示若就业市场降温延续，9 月调整政策立场是合适的。会后利率期货定价 9 月降息概率升至 68%。",
+      brief: "7 月按兵不动，声明措辞转鸽，鲍威尔暗示 9 月具备条件，市场定价 9 月降息概率升至 <span class='hl-pos'>68%</span>。",
+      source: { name: "Federal Reserve 官方声明", type: "央行公告", url: "https://www.federalreserve.gov" },
+      tags: ["FOMC", "鲍威尔", "点阵图"]
+    },
+    {
+      id: "e32", topic: "美国降息", type: "macro", impact: "neg",
+      time: "2026-07-11 20:30",
+      title: "美国 6 月 CPI 同比 2.6% 高于预期，核心服务通胀黏性显现",
+      summary: "美国 6 月 CPI 同比 2.6%，高于市场预期的 2.4%；核心 CPI 环比 0.3%，其中住房与医疗服务分项黏性明显。数据公布后，9 月降息概率一度从 62% 回落至 51%，10 年期美债收益率跳升 9bp，美元指数短线走强。",
+      brief: "6 月 CPI <span class='hl-neg'>2.6% 高于预期</span>，核心服务通胀黏性明显，9 月降息概率一度回落至 51%，美债收益率跳升 9bp。",
+      source: { name: "美国劳工统计局 (BLS)", type: "官方数据", url: "https://www.bls.gov" },
+      tags: ["CPI", "通胀黏性", "美债"]
+    },
+    {
+      id: "e33", topic: "美国降息", type: "report", impact: "pos",
+      time: "2026-07-02 08:00",
+      title: "高盛：首次降息落地后 6 个月内，新兴市场权益平均跑赢美股 7%",
+      summary: "高盛全球宏观团队复盘 1989 年以来 6 轮降息周期，发现在“软着陆式”降息场景中，首次降息后 6 个月 MSCI 新兴市场指数平均跑赢标普 500 约 7 个百分点，其中半导体与新能源链条弹性最大。报告建议增配 A 股与港股核心资产。",
+      brief: "复盘 6 轮降息周期：软着陆场景中，首次降息后 6 个月新兴市场平均跑赢美股 <span class='hl-pos'>7%</span>，建议增配 A 股港股核心资产。",
+      source: { name: "Goldman Sachs Global Macro", type: "外资研报", url: "https://www.goldmansachs.com" },
+      tags: ["高盛", "降息周期", "新兴市场"]
+    },
+    {
+      id: "e34", topic: "美国降息", type: "news", impact: "pos",
+      time: "2026-06-20 21:00",
+      title: "美国 5 月零售销售意外转负，消费者动能减弱强化降息预期",
+      summary: "美国 5 月零售销售环比 -0.3%，为连续第二个月负增长，除汽车与汽油外的核心零售同样疲软。高收入群体信用卡违约率升至 2011 年以来高位。市场解读为消费者动能减弱将为美联储提供更多降息空间，黄金与长久期美债同步走强。",
+      brief: "5 月零售销售 <span class='hl-neg'>-0.3%</span> 连续两月负增长，消费者动能减弱强化降息预期，<span class='hl-pos'>黄金与长久期美债走强</span>。",
+      source: { name: "美国商务部 / 路透社", type: "官方数据+媒体", url: "https://www.census.gov" },
+      tags: ["零售销售", "消费", "黄金"]
+    },
+    {
+      id: "e35", topic: "美国降息", type: "opinion", impact: "neu",
+      time: "2026-06-03 09:10",
+      title: "经济学家圆桌：本轮降息是“预防式”还是“衰退式”，分歧加大",
+      summary: "多位首席经济学家在圆桌讨论中观点分化：鸽派认为通胀回落路径清晰，预防式降息 2-3 次即可；鹰派则警告关税二次传导与财政赤字货币化可能令通胀在 2027 年反弹，本轮降息空间被高估，中性利率已结构性抬升至 3% 上方。",
+      brief: "鸽派：预防式降息 2-3 次即可；鹰派：关税二次传导或令通胀 2027 年反弹，<span class='hl-neg'>中性利率已抬升至 3% 上方</span>，降息空间被高估。",
+      source: { name: "财新夏季峰会圆桌纪要", type: "会议观点", url: "https://www.caixin.com" },
+      tags: ["中性利率", "预防式降息", "观点分歧"]
+    },
+    {
+      id: "e36", topic: "美国降息", type: "macro", impact: "pos",
+      time: "2026-05-06 20:30",
+      title: "非农爆冷：4 月新增就业 7.2 万人，失业率升至 4.4%",
+      summary: "美国 4 月非农新增就业仅 7.2 万人，大幅低于预期的 16 万人，前两月数据合计下修 5.6 万人；失业率升至 4.4%，触发萨姆规则临界值。数据公布后市场对年内降息次数的定价从 2 次上调至 3 次，2 年期美债收益率单日下行 15bp。",
+      brief: "4 月非农仅 <span class='hl-neg'>7.2 万人</span>，失业率 4.4% 触发萨姆规则临界，年内降息定价升至 <span class='hl-pos'>3 次</span>，2Y 美债下行 15bp。",
+      source: { name: "美国劳工统计局 (BLS)", type: "官方数据", url: "https://www.bls.gov" },
+      tags: ["非农", "失业率", "萨姆规则"]
+    }
+  ];
+
+  /* ================= 状态 ================= */
+
+  var state = {
+    topic: "宁德时代",
+    types: {},        // type -> bool
+    range: "all",
+    favs: {},
+    imps: {},
+    currentDetail: null
+  };
+
+  Object.keys(TYPE_META).forEach(function (t) { state.types[t] = true; });
+
+  /* ================= 工具 ================= */
+
+  var NOW = new Date("2026-08-02T12:00:00");
+
+  function parseTime(str) {
+    return new Date(str.replace(" ", "T") + ":00");
+  }
+
+  function $(id) { return document.getElementById(id); }
+
+  function showToast(msg, kind) {
+    var wrap = $("toastWrap");
+    var el = document.createElement("div");
+    el.className = "toast " + (kind || "info");
+    var icon = kind === "fav" ? "★" : kind === "imp" ? "⚑" : "✓";
+    el.innerHTML = "<span class='t-icon'>" + icon + "</span><span>" + msg + "</span>";
+    wrap.appendChild(el);
+    setTimeout(function () { wrap.removeChild(el); }, 2200);
+  }
+
+  function popBtn(btn) {
+    btn.classList.remove("pop");
+    void btn.offsetWidth;
+    btn.classList.add("pop");
+  }
+
+  /* ================= 主题渲染 ================= */
+
+  function renderTopic() {
+    var meta = TOPICS[state.topic];
+    $("topicName").textContent = state.topic;
+    if (!meta) {
+      $("topicTags").innerHTML = "<span class='topic-tag'>自定义主题</span>";
+      $("topicDesc").textContent = "该主题暂无专属概览数据，下方展示全库事件时间线。";
+      $("metricGrid").innerHTML = "";
+      return;
+    }
+    $("topicTags").innerHTML = meta.tags.map(function (t) {
+      return "<span class='topic-tag'>" + t + "</span>";
+    }).join("");
+    $("topicDesc").textContent = meta.desc;
+    $("metricGrid").innerHTML = meta.metrics.map(function (m) {
+      return "<div class='metric-card'>" +
+        "<div class='m-label'>" + m.label + "</div>" +
+        "<div class='m-value'>" + m.value + "</div>" +
+        "<div class='m-delta " + m.dir + "'>" + (m.dir === "up" ? "▲ " : "▼ ") + m.delta + "</div>" +
+        "</div>";
+    }).join("");
+  }
+
+  function renderQuickTopics() {
+    var wrap = $("quickTopics");
+    wrap.innerHTML = "";
+    Object.keys(TOPICS).forEach(function (name) {
+      var btn = document.createElement("button");
+      btn.className = "quick-chip" + (name === state.topic ? " active" : "");
+      btn.textContent = name;
+      btn.addEventListener("click", function () {
+        switchTopic(name);
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function switchTopic(name) {
+    state.topic = name;
+    renderTopic();
+    renderQuickTopics();
+    renderTimeline();
+    showToast("已切换到研究主题「" + name + "」", "info");
+  }
+
+  /* ================= 筛选渲染 ================= */
+
+  function renderFilters() {
+    var tf = $("typeFilters");
+    tf.innerHTML = "";
+    Object.keys(TYPE_META).forEach(function (key) {
+      var btn = document.createElement("button");
+      btn.className = "type-chip" + (state.types[key] ? " on" : "");
+      btn.textContent = TYPE_META[key].icon + " " + TYPE_META[key].label;
+      btn.addEventListener("click", function () {
+        state.types[key] = !state.types[key];
+        btn.classList.toggle("on", state.types[key]);
+        renderTimeline();
+      });
+      tf.appendChild(btn);
+    });
+
+    var rf = $("rangeFilters");
+    rf.innerHTML = "";
+    RANGES.forEach(function (r) {
+      var btn = document.createElement("button");
+      btn.className = "range-btn" + (state.range === r.key ? " on" : "");
+      btn.textContent = r.label;
+      btn.addEventListener("click", function () {
+        state.range = r.key;
+        Array.prototype.forEach.call(rf.children, function (c) { c.classList.remove("on"); });
+        btn.classList.add("on");
+        renderTimeline();
+      });
+      rf.appendChild(btn);
+    });
+  }
+
+  /* ================= 时间线渲染 ================= */
+
+  function getFilteredEvents() {
+    var topicKnown = !!TOPICS[state.topic];
+    var rangeDays = null;
+    RANGES.forEach(function (r) { if (r.key === state.range) rangeDays = r.days || null; });
+
+    return EVENTS.filter(function (ev) {
+      if (topicKnown && ev.topic !== state.topic) return false;
+      if (!state.types[ev.type]) return false;
+      if (rangeDays) {
+        var diff = (NOW - parseTime(ev.time)) / (1000 * 3600 * 24);
+        if (diff > rangeDays) return false;
+      }
+      return true;
+    }).sort(function (a, b) { return parseTime(b.time) - parseTime(a.time); });
+  }
+
+  function renderTimeline() {
+    var list = getFilteredEvents();
+    var wrap = $("timeline");
+    $("tlCount").textContent = "共 " + list.length + " 条 · " + state.topic;
+
+    if (list.length === 0) {
+      wrap.innerHTML = "<div class='empty-state'>" +
+        "<div class='big'>◌</div>" +
+        "<div>当前筛选条件下暂无事件</div>" +
+        "<div style='font-size:12px;margin-top:4px;'>请尝试放宽信息类型或时间范围</div>" +
+        "</div>";
+      updateMarkStats();
+      return;
+    }
+
+    wrap.innerHTML = "";
+    list.forEach(function (ev, idx) {
+      var tm = TYPE_META[ev.type];
+      var im = IMPACT_META[ev.impact];
+      var item = document.createElement("div");
+      item.className = "tl-item";
+      item.style.animationDelay = (idx * 0.04) + "s";
+
+      var cardCls = "tl-card" + (state.imps[ev.id] ? " important" : "");
+      var favCls = "act-btn act-fav" + (state.favs[ev.id] ? " faved" : "");
+      var impCls = "act-btn act-imp" + (state.imps[ev.id] ? " imped" : "");
+
+      item.innerHTML =
+        "<div class='tl-node' style='--node-color:" + tm.color + ";color:" + tm.color + "'>" + tm.icon + "</div>" +
+        "<div class='" + cardCls + "' data-id='" + ev.id + "'>" +
+          "<div class='tl-meta'>" +
+            "<span class='tl-time'>" + ev.time + "</span>" +
+            "<span class='type-badge " + tm.cls + "'>" + tm.label + "</span>" +
+            "<span class='impact-badge " + im.cls + "'>" + im.label + "</span>" +
+            "<span class='imp-flag'>⚑ 重要</span>" +
+          "</div>" +
+          "<div class='tl-title' data-act='detail'>" + ev.title + "</div>" +
+          "<div class='tl-summary'>" + ev.brief + "</div>" +
+          "<div class='tl-footer'>" +
+            "<span class='tl-source'>来源：<a href='" + ev.source.url + "' target='_blank' rel='noopener' data-act='source'>" + ev.source.name + "</a></span>" +
+            "<span class='tl-actions'>" +
+              "<button class='" + favCls + "' data-act='fav'>" + (state.favs[ev.id] ? "★ 已收藏" : "☆ 收藏") + "</button>" +
+              "<button class='" + impCls + "' data-act='imp'>" + (state.imps[ev.id] ? "⚑ 已标重要" : "⚑ 标记重要") + "</button>" +
+              "<button class='act-btn' data-act='detail'>详情 →</button>" +
+            "</span>" +
+          "</div>" +
+        "</div>";
+      wrap.appendChild(item);
+    });
+
+    updateMarkStats();
+  }
+
+  /* ================= 交互 ================= */
+
+  function findEvent(id) {
+    for (var i = 0; i < EVENTS.length; i++) {
+      if (EVENTS[i].id === id) return EVENTS[i];
+    }
+    return null;
+  }
+
+  function updateMarkStats() {
+    $("favCount").textContent = Object.keys(state.favs).filter(function (k) { return state.favs[k]; }).length;
+    $("impCount").textContent = Object.keys(state.imps).filter(function (k) { return state.imps[k]; }).length;
+  }
+
+  function toggleFav(id, btn) {
+    state.favs[id] = !state.favs[id];
+    if (!state.favs[id]) delete state.favs[id];
+    var on = !!state.favs[id];
+    if (btn) {
+      btn.classList.toggle("faved", on);
+      btn.innerHTML = on ? "★ 已收藏" : "☆ 收藏";
+      popBtn(btn);
+    }
+    updateMarkStats();
+    showToast(on ? "已加入收藏" : "已取消收藏", "fav");
+  }
+
+  function toggleImp(id, btn) {
+    state.imps[id] = !state.imps[id];
+    if (!state.imps[id]) delete state.imps[id];
+    var on = !!state.imps[id];
+    if (btn) {
+      btn.classList.toggle("imped", on);
+      btn.innerHTML = on ? "⚑ 已标重要" : "⚑ 标记重要";
+      popBtn(btn);
+      var card = btn.closest(".tl-card");
+      if (card) {
+        card.classList.toggle("important", on);
+        if (on) {
+          card.classList.remove("flash");
+          void card.offsetWidth;
+          card.classList.add("flash");
+        }
+      }
+    }
+    updateMarkStats();
+    showToast(on ? "已标记为重要事件" : "已取消重要标记", "imp");
+  }
+
+  /* ================= 详情抽屉 ================= */
+
+  function openDrawer(id) {
+    var ev = findEvent(id);
+    if (!ev) return;
+    state.currentDetail = id;
+
+    var tm = TYPE_META[ev.type];
+    var im = IMPACT_META[ev.impact];
+
+    var dType = $("dType");
+    dType.textContent = tm.label;
+    dType.className = "type-badge " + tm.cls;
+
+    var dImpact = $("dImpact");
+    dImpact.textContent = im.label;
+    dImpact.className = "impact-badge " + im.cls;
+
+    $("dTime").textContent = ev.time;
+    $("dTitle").textContent = ev.title;
+    $("dSummary").textContent = ev.summary;
+    $("dSourceName").textContent = ev.source.name;
+    $("dSourceType").textContent = ev.source.type;
+    $("dSourceLink").href = ev.source.url;
+
+    $("dTags").innerHTML = ev.tags.map(function (t) {
+      return "<span class='d-tag'># " + t + "</span>";
+    }).join("");
+
+    syncDrawerBtns();
+
+    $("drawerMask").classList.add("open");
+    $("drawer").classList.add("open");
+  }
+
+  function syncDrawerBtns() {
+    var id = state.currentDetail;
+    if (!id) return;
+    var favBtn = $("dFavBtn");
+    var impBtn = $("dImpBtn");
+    var faved = !!state.favs[id];
+    var imped = !!state.imps[id];
+    favBtn.classList.toggle("faved", faved);
+    favBtn.innerHTML = faved ? "★ 已收藏" : "☆ 收藏";
+    impBtn.classList.toggle("imped", imped);
+    impBtn.innerHTML = imped ? "⚑ 已标重要" : "⚑ 标记重要";
+  }
+
+  function closeDrawer() {
+    $("drawerMask").classList.remove("open");
+    $("drawer").classList.remove("open");
+    state.currentDetail = null;
+  }
+
+  /* ================= 事件绑定 ================= */
+
+  $("timeline").addEventListener("click", function (e) {
+    var actEl = e.target.closest("[data-act]");
+    if (!actEl) return;
+    var card = e.target.closest(".tl-card");
+    if (!card) return;
+    var id = card.getAttribute("data-id");
+    var act = actEl.getAttribute("data-act");
+
+    if (act === "source") return; // 链接默认跳转
+    e.preventDefault();
+
+    if (act === "fav") toggleFav(id, actEl);
+    else if (act === "imp") toggleImp(id, actEl);
+    else if (act === "detail") openDrawer(id);
+  });
+
+  $("drawerClose").addEventListener("click", closeDrawer);
+  $("drawerMask").addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeDrawer();
+  });
+
+  $("dFavBtn").addEventListener("click", function () {
+    if (!state.currentDetail) return;
+    toggleFav(state.currentDetail, this);
+    syncDrawerBtns();
+    renderTimeline();
+  });
+
+  $("dImpBtn").addEventListener("click", function () {
+    if (!state.currentDetail) return;
+    toggleImp(state.currentDetail, this);
+    syncDrawerBtns();
+    renderTimeline();
+  });
+
+  // 搜索
+  $("searchInput").addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    var q = this.value.trim();
+    if (!q) return;
+    switchTopic(q);
+    this.value = "";
+    this.blur();
+  });
+
+  /* ================= 初始化 ================= */
+
+  renderTopic();
+  renderQuickTopics();
+  renderFilters();
+  renderTimeline();
+
+})();
+</script>
+</body>
+</html>

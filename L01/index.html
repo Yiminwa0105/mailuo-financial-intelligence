@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的 AI 杠杆卡</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: "YouYuan", "幼圆", "Hiragino Maru Gothic ProN",
+      "Segoe UI Rounded", -apple-system, "PingFang SC", "Microsoft YaHei",
+      sans-serif;
+    background:
+      radial-gradient(circle at 10% 15%, rgba(255, 255, 255, 0.14) 1.5px, transparent 1.6px) 0 0 / 26px 26px,
+      radial-gradient(circle at 80% 60%, rgba(255, 255, 255, 0.10) 1.5px, transparent 1.6px) 0 0 / 38px 38px,
+      linear-gradient(135deg, #5eead4 0%, #38bdf8 50%, #818cf8 100%);
+    min-height: 100vh;
+    padding: 40px 20px;
+    color: #3d4f5c;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+    color: #fff;
+  }
+
+  .header h1 {
+    font-size: 34px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+    position: relative;
+    display: inline-block;
+    text-shadow: 0 2px 8px rgba(56, 189, 248, 0.3);
+  }
+
+  .header h1::before {
+    content: "❀";
+    position: absolute;
+    top: -8px;
+    left: -28px;
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .header h1::after {
+    content: "✿";
+    position: absolute;
+    top: -6px;
+    right: -26px;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .header p {
+    font-size: 14px;
+    opacity: 0.9;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 28px;
+    padding: 36px 32px;
+    box-shadow: 0 24px 60px rgba(56, 189, 248, 0.25),
+      0 4px 12px rgba(129, 140, 248, 0.1);
+    margin-bottom: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.6);
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4a5d6e;
+    margin-bottom: 8px;
+  }
+
+  .form-group label .hint {
+    font-weight: 400;
+    color: #94a3b8;
+    font-size: 12px;
+    margin-left: 6px;
+  }
+
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: 13px 16px;
+    font-size: 14px;
+    border: 2px solid #e0f2fe;
+    border-radius: 18px;
+    background: #f0fdfa;
+    color: #3d4f5c;
+    font-family: inherit;
+    transition: all 0.25s ease;
+  }
+
+  .form-group input::placeholder,
+  .form-group textarea::placeholder {
+    color: #cbd5e1;
+  }
+
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #38bdf8;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
+  }
+
+  .form-group textarea {
+    resize: vertical;
+    min-height: 72px;
+  }
+
+  .btn-generate {
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    letter-spacing: 2px;
+    box-shadow: 0 6px 16px rgba(56, 189, 248, 0.35);
+  }
+
+  .btn-generate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(129, 140, 248, 0.45);
+  }
+
+  .btn-generate:active {
+    transform: translateY(0);
+  }
+
+  .btn-generate:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* 产品卡 */
+  .result-card {
+    background: #fff;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(56, 189, 248, 0.25),
+      0 4px 12px rgba(129, 140, 248, 0.1);
+    display: none;
+    animation: fadeUp 0.5s ease;
+    border: 3px solid rgba(255, 255, 255, 0.6);
+  }
+
+  .result-card.show {
+    display: block;
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .result-header {
+    background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+    color: #fff;
+    padding: 26px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-header::after {
+    content: "";
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 110px;
+    height: 110px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 50%;
+  }
+
+  .result-header::before {
+    content: "";
+    position: absolute;
+    bottom: -20px;
+    left: -10px;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+  }
+
+  .result-header .tag {
+    display: inline-block;
+    font-size: 12px;
+    padding: 5px 12px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .result-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+    letter-spacing: 1px;
+  }
+
+  .result-body {
+    padding: 28px 32px;
+  }
+
+  .result-item {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px dashed #e0f2fe;
+  }
+
+  .result-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .result-item .label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #38bdf8;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  .result-item .label::before {
+    content: "◦ ";
+    color: #818cf8;
+  }
+
+  .result-item .value {
+    font-size: 15px;
+    color: #3d4f5c;
+    line-height: 1.7;
+  }
+
+  .leverage-badge {
+    display: inline-block;
+    padding: 7px 16px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .leverage-efficiency {
+    background: #e0f2fe;
+    color: #0284c7;
+  }
+
+  .leverage-monetization {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  .leverage-fun {
+    background: #fce7f3;
+    color: #db2777;
+  }
+
+  .btn-reset {
+    width: 100%;
+    padding: 12px;
+    margin-top: 16px;
+    font-size: 14px;
+    color: #64748b;
+    background: #f8fafc;
+    border: 2px solid #e0f2fe;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+
+  .btn-reset:hover {
+    border-color: #38bdf8;
+    color: #38bdf8;
+    background: #f0fdfa;
+  }
+
+  .empty-tip {
+    text-align: center;
+    padding: 20px;
+    color: #a0aec0;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>我的 AI 杠杆卡</h1>
+      <p>用 5 个小问题，撬动你的第一个产品 Idea ✿</p>
+    </div>
+
+    <div class="card">
+      <div class="form-group">
+        <label for="whoami">1. 我是谁<span class="hint">你的身份 / 角色</span></label>
+        <input type="text" id="whoami" placeholder="小学语文老师、健身爱好者、自由设计师…" />
+      </div>
+
+      <div class="form-group">
+        <label for="problem">2. 我经常遇到的一个具体问题<span class="hint">越具体越好</span></label>
+        <textarea id="problem" placeholder="每次备课件都要花两小时找合适的阅读素材…"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="others">3. 还有谁也有这个问题<span class="hint">目标人群</span></label>
+        <input type="text" id="others" placeholder="其他语文老师、家教老师、家长…" />
+      </div>
+
+      <div class="form-group">
+        <label for="outcome">4. 我希望结果变成什么样<span class="hint">理想状态</span></label>
+        <textarea id="outcome" placeholder="输入主题，自动生成分级阅读素材和配套练习题…"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="leverage">5. 这个问题属于<span class="hint">AI 杠杆类型</span></label>
+        <select id="leverage">
+          <option value="">— 请选择 —</option>
+          <option value="efficiency">提高效率</option>
+          <option value="monetization">找到变现路径</option>
+          <option value="fun">自娱自乐</option>
+        </select>
+      </div>
+
+      <button class="btn-generate" id="generateBtn">生成我的产品 Idea ✦</button>
+    </div>
+
+    <div class="result-card" id="resultCard">
+      <div class="result-header">
+        <span class="tag" id="leverageTag">AI 杠杆卡</span>
+        <h2 id="productName">产品名称</h2>
+      </div>
+      <div class="result-body">
+        <div class="result-item">
+          <div class="label">目标用户</div>
+          <div class="value" id="targetUser">—</div>
+        </div>
+        <div class="result-item">
+          <div class="label">核心问题</div>
+          <div class="value" id="coreProblem">—</div>
+        </div>
+        <div class="result-item">
+          <div class="label">最小版本 (MVP)</div>
+          <div class="value" id="mvp">—</div>
+        </div>
+        <div class="result-item">
+          <div class="label">AI 杠杆类型</div>
+          <div class="value">
+            <span class="leverage-badge" id="leverageBadge">—</span>
+          </div>
+        </div>
+        <button class="btn-reset" id="resetBtn">重新填写</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  var leverageMap = {
+    efficiency: {
+      label: "提高效率",
+      cls: "leverage-efficiency",
+      prefix: "AI 提效 · "
+    },
+    monetization: {
+      label: "找到变现路径",
+      cls: "leverage-monetization",
+      prefix: "AI 变现 · "
+    },
+    fun: {
+      label: "自娱自乐",
+      cls: "leverage-fun",
+      prefix: "AI 玩起来 · "
+    }
+  };
+
+  // 根据输入内容生成产品名称
+  function buildProductName(outcome, problem, whoami) {
+    var raw = (outcome || problem || whoami || "").trim();
+    if (!raw) return "我的 AI 产品";
+
+    // 去掉句末标点
+    var cleaned = raw.replace(/[。.,，！!？?；;]+$/g, "").trim();
+
+    // 如果过短，加上 AI 前缀
+    if (cleaned.length <= 8) {
+      return "AI " + cleaned;
+    }
+
+    // 取前 12 个字 + 助手
+    if (cleaned.length <= 16) {
+      return cleaned + " 助手";
+    }
+
+    return cleaned.substring(0, 14) + "… 助手";
+  }
+
+  // 生成 MVP 描述
+  function buildMVP(outcome, leverage) {
+    var base = "一个能用 AI 自动处理「";
+    var action = outcome ? outcome.trim().replace(/[。.,，！!？?；;]+$/g, "") : "你的核心任务";
+    var suffix;
+    if (leverage === "monetization") {
+      suffix = "」并支持付费订阅的最小网页工具";
+    } else if (leverage === "fun") {
+      suffix = "」的轻量级小工具，先让自己爽起来";
+    } else {
+      suffix = "」的最小网页工具，跑通一次完整流程即可";
+    }
+    return base + action + suffix;
+  }
+
+  // 生成目标用户描述
+  function buildTargetUser(whoami, others) {
+    var me = (whoami || "").trim();
+    var othersText = (others || "").trim();
+    if (me && othersText) {
+      return "像 " + me + " 一样的人，以及 " + othersText + "。";
+    }
+    if (me) {
+      return "像 " + me + " 一样，遇到同样问题的人。";
+    }
+    if (othersText) {
+      return othersText + "。";
+    }
+    return "—";
+  }
+
+  function getValue(id) {
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+
+  function showError(msg) {
+    alert(msg);
+  }
+
+  function generate() {
+    var whoami = getValue("whoami");
+    var problem = getValue("problem");
+    var others = getValue("others");
+    var outcome = getValue("outcome");
+    var leverage = getValue("leverage");
+
+    if (!whoami || !problem || !others || !outcome || !leverage) {
+      showError("请把 5 个问题都填一下，缺一不可哦～");
+      return;
+    }
+
+    var info = leverageMap[leverage];
+    if (!info) {
+      showError("请选择 AI 杠杆类型");
+      return;
+    }
+
+    // 填充产品卡
+    document.getElementById("productName").textContent =
+      info.prefix + buildProductName(outcome, problem, whoami);
+
+    document.getElementById("targetUser").textContent =
+      buildTargetUser(whoami, others);
+
+    document.getElementById("coreProblem").textContent = problem;
+
+    document.getElementById("mvp").textContent = buildMVP(outcome, leverage);
+
+    var badge = document.getElementById("leverageBadge");
+    badge.textContent = info.label;
+    badge.className = "leverage-badge " + info.cls;
+
+    document.getElementById("leverageTag").textContent =
+      "AI 杠杆卡 · " + info.label;
+
+    var card = document.getElementById("resultCard");
+    card.classList.add("show");
+    card.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function reset() {
+    ["whoami", "problem", "others", "outcome", "leverage"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    var card = document.getElementById("resultCard");
+    card.classList.remove("show");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  document.getElementById("generateBtn").addEventListener("click", generate);
+  document.getElementById("resetBtn").addEventListener("click", reset);
+})();
+</script>
+</body>
+</html>
