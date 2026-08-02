@@ -18,19 +18,24 @@
 
 ```
 demo/
-├── mailuo-v1.html    # V1：主题式金融研究 Timeline
-├── mailuo-v2.html    # V2：跨市场证券数据平台（当前主版本）
-└── index.html        # Pages 部署入口（= mailuo-v2.html）
+├── mailuo-v1.html       # V1：主题式金融研究 Timeline（单文件）
+├── mailuo-v2.html       # V2：跨市场证券数据平台（当前主版本，HTML 骨架）
+├── index.html           # Pages 部署入口（= mailuo-v2.html）
+├── css/
+│   └── mailuo-v2.css    # V2 样式层（样式分离）
+└── js/
+    ├── mailuo-v2.data.js  # V2 数据层：常量/公司档案/事件/市场目录/种子（数据分离）
+    └── mailuo-v2.app.js   # V2 应用逻辑层
 docs/
-├── PRD-v1.md         # V1 产品需求文档
-└── PRD-v2.md         # V2 产品需求文档
-.github/              # Issue / PR 协作模板
+├── PRD-v1.md            # V1 产品需求文档
+└── PRD-v2.md            # V2 产品需求文档
+.github/                 # Issue / PR 协作模板
 README.md
-CHANGELOG.md          # 版本变更记录
-LICENSE               # MIT
+CHANGELOG.md             # 版本变更记录
+LICENSE                  # MIT
 ```
 
-两个版本均为**零依赖单文件应用**（HTML + CSS + 原生 JavaScript），无需构建、无需后端。
+两个版本均为**零依赖纯静态应用**（HTML + CSS + 原生 JavaScript），无需构建、无需后端。V2 已做**数据分离与样式分离**：HTML 骨架 + `css/` 样式层 + `js/` 数据层与应用逻辑层；V1 保留单文件形态。
 
 ## 快速开始
 
