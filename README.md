@@ -116,10 +116,13 @@ python -m http.server 8000
 | `GET /api/companies?market=CN&sector=半导体&q=腾讯&limit=50&offset=0` | 公司数据库列表（支持市场/交易所/板块/关键词筛选与分页） |
 | `GET /api/company?id=catl` | 单个公司详情（精编公司含估值/财务/股东/事件） |
 | `GET /api/events?company=catl&type=earnings&lv=high&limit=20` | 公司事件 Timeline（`company=all` 可取全部精编事件） |
+| `GET /api/quote?codes=sh600519,hk00700,usTSLA` | **实时行情代理**（腾讯财经真实数据，支持 sh/sz/bj/hk/us，单次最多 60 个代码） |
 
 示例：<https://vibe-coding-4vf.pages.dev/api/companies?market=CN&sector=半导体&limit=5>
 
-> API 与站点共用同一份模拟数据层（`js/mailuo-v2.data.js`），所有响应均带 `meta.dataSource` 与 `meta.updateTime` 标注。
+> 除 `/api/quote` 外，API 与站点共用同一份模拟数据层（`js/mailuo-v2.data.js`），所有响应均带 `meta.dataSource` 与 `meta.updateTime` 标注。
+> 前端公司列表页与档案页的**价格 / 涨跌幅 / 市值 / 52 周区间 / PE / PB** 会优先替换为 `/api/quote` 的真实行情（韩股除外，无免费源），接口不可用时自动回退模拟数据，来源行会标注「腾讯财经 · 实时行情」。
+> 本地开发含 Functions 需用 Wrangler：仓库根目录执行 `powershell -ExecutionPolicy Bypass -File .\start-dev.ps1`，访问 <http://localhost:8788/mailuo-v2.html>。
 
 ## 明确不做（本期范围）
 

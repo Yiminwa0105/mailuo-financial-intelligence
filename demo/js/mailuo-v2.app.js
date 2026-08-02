@@ -45,6 +45,127 @@ function marketTag(mkt) {
   return "<span class='market-tag " + m.cls + "'>" + m.label + "</span>";
 }
 
+/* ================= 实时行情接入（/api/quote 代理腾讯财经，失败回退模拟数据） ================= */
+
+var QUOTE_SRC_LABEL = "腾讯财经 · 实时行情";
+var quoteCache = {};    // txCode -> { time, data }
+var QUOTE_TTL = 60000;  // 60s 内复用缓存，同时避免重渲染死循环
+
+function toTxCode(c) {
+  var m;
+  if (c.market === "CN") {
+    m = c.code.match(/^(\d{6})\.(SH|SZ|BJ)$/);
+    if (!m) return null;
+    return (m[2] === "SH" ? "sh" : m[2] === "SZ" ? "sz" : "bj") + m[1];
+  }
+  if (c.market === "HK") {
+    m = c.code.match(/^(\d{4,5})\.HK$/);
+    return m ? "hk" + ("0000" + m[1]).slice(-5) : null;
+  }
+  if (c.market === "US") return "us" + c.code;
+  return null; // 韩股暂无免费行情源，保留模拟数据
+}
+
+function fmtPriceReal(n) {
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtCapReal(curSym, capYi) {
+  if (capYi >= 10000) return curSym + (capYi / 10000).toFixed(2) + " 万亿";
+  return curSym + Math.round(capYi).toLocaleString("en-US") + " 亿";
+}
+
+function applyQuoteToDir(d, q) {
+  var m = MARKETS[d.market];
+  d.price = fmtPriceReal(q.price);
+  d.chg = (q.changePct >= 0 ? "+" : "") + q.changePct.toFixed(2) + "%";
+  d.dir = q.changePct >= 0 ? "up" : "down";
+  if (q.totalCapYi) d.cap = fmtCapReal(m.curSym, q.totalCapYi);
+  d._quoteTime = q.time;
+}
+
+function applyQuoteToProfile(c, q) {
+  var m = MARKETS[c.market];
+  c.price = fmtPriceReal(q.price);
+  c.chgPct = (q.changePct >= 0 ? "+" : "") + q.changePct.toFixed(2) + "%";
+  c.chgDir = q.changePct >= 0 ? "up" : "down";
+  if (q.totalCapYi) c.marketCap = fmtCapReal(m.curSym, q.totalCapYi);
+  if (q.volumeShares != null) c.volume = Math.round(q.volumeShares / 10000).toLocaleString("en-US") + " 万股";
+  if (q.turnoverYuan != null) c.turnover = m.curSym + (q.turnoverYuan / 1e8).toFixed(1) + " 亿";
+  if (q.high52) c.high52 = fmtPriceReal(q.high52);
+  if (q.low52) c.low52 = fmtPriceReal(q.low52);
+  if (q.peTtm) c.valuation["PE (TTM)"] = q.peTtm.toFixed(2);
+  if (q.pb) c.valuation["PB"] = q.pb.toFixed(2);
+  c._quoteTime = q.time;
+}
+
+/* pairs: [[dirEntry, txCode], ...]，只拉缓存过期项；失败静默回退模拟数据 */
+function fetchQuotesStale(pairs, cb) {
+  var now = Date.now();
+  var need = pairs.filter(function (p) {
+    var hit = quoteCache[p[1]];
+    return !hit || now - hit.time > QUOTE_TTL;
+  });
+  if (!need.length) { cb(null); return; }
+  fetch("/api/quote?codes=" + need.map(function (p) { return p[1]; }).join(","))
+    .then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); })
+    .then(function (data) {
+      if (!data || !data.quotes) throw new Error("bad payload");
+      need.forEach(function (p) {
+        quoteCache[p[1]] = { time: Date.now(), data: data.quotes[p[1]] || null };
+      });
+      cb(data.quotes);
+    })
+    .catch(function (e) {
+      console.warn("[quote] 实时行情获取失败，回退模拟数据：", e);
+      need.forEach(function (p) { quoteCache[p[1]] = { time: Date.now(), data: null }; });
+      cb(null);
+    });
+}
+
+function loadCompanyQuote(id) {
+  var d = findDir(id);
+  if (!d) return;
+  var tx = toTxCode(d);
+  if (!tx) return;
+  fetchQuotesStale([[d, tx]], function () {
+    if (state.view !== "company" || state.company !== id) return;
+    var cached = quoteCache[tx];
+    var c = findCompany(id);
+    if (cached && cached.data) {
+      applyQuoteToDir(d, cached.data);
+      if (c) applyQuoteToProfile(c, cached.data);
+      renderCoHeader();
+      renderValuationPanel();
+      renderComparePanel();
+    } else if (c && !c._quoteTime) {
+      c._quoteFailed = true;   // 行情获取失败，头部明示当前为模拟数据
+      renderCoHeader();
+    }
+  });
+}
+
+function loadSectorQuotes(list) {
+  var pairs = [];
+  list.forEach(function (d) {
+    var tx = toTxCode(d);
+    if (tx) pairs.push([d, tx]);
+  });
+  if (!pairs.length) return;
+  var token = state.country + "/" + state.exchange + "/" + state.sector;
+  fetchQuotesStale(pairs, function (quotes) {
+    if (!quotes) return;
+    if (state.view !== "sector") return;
+    if ((state.country + "/" + state.exchange + "/" + state.sector) !== token) return;
+    var hit = false;
+    pairs.forEach(function (p) {
+      var cached = quoteCache[p[1]];
+      if (cached && cached.data) { applyQuoteToDir(p[0], cached.data); hit = true; }
+    });
+    if (hit) renderSectorView();
+  });
+}
+
 function showToast(msg, kind) {
   var wrap = $("toastWrap");
   var el = document.createElement("div");
@@ -167,6 +288,7 @@ function selectCompany(id) {
   renderTabs();
   renderAllPanels();
   renderBreadcrumb();
+  loadCompanyQuote(id);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -377,11 +499,14 @@ function renderSectorView() {
     "<thead><tr><th>股票代码</th><th>公司名称</th><th>国家/地区</th><th>上市市场</th><th>板块/行业</th>" +
     "<th class='r'>市值</th><th class='r'>最新价</th><th class='r'>涨跌幅</th><th class='r'>机构持仓变化</th><th>大股东变化</th><th>最近资本事件</th><th>披露时间</th></tr></thead>" +
     "<tbody>" + rows + "</tbody></table></div>" +
-    srcLine("列表字段口径：最近一期公开披露 · 模拟数据") + "</div>";
+    srcLine(list.some(function (d) { return d._quoteTime; })
+      ? "价格 / 涨跌幅 / 市值：" + QUOTE_SRC_LABEL + "（" + list.filter(function (d) { return d._quoteTime; })[0]._quoteTime + "）· 其余字段为模拟数据"
+      : "列表字段口径：最近一期公开披露 · 模拟数据") + "</div>";
 
   Array.prototype.forEach.call($("viewSector").querySelectorAll("[data-co]"), function (tr) {
     tr.addEventListener("click", function () { selectCompany(tr.getAttribute("data-co")); });
   });
+  loadSectorQuotes(list);
 }
 
 /* ================= 通用公司档案生成器（目录公司无手工档案时调用） ================= */
@@ -527,7 +652,9 @@ function renderCoHeader() {
       "<div class='co-stat'><div class='s-lbl'>成交量</div><div class='s-val num'>" + c.volume + "</div></div>" +
       "<div class='co-stat'><div class='s-lbl'>成交额</div><div class='s-val num'>" + c.turnover + "</div></div>" +
       "<div class='co-stat'><div class='s-lbl'>52 周高 / 低</div><div class='s-val num'>" + m.curSym + c.high52 + " / " + m.curSym + c.low52 + "</div></div>" +
-      "<div class='co-update'>币种：" + m.currency + " · 数据更新：" + UPDATE_TIME + "<br>" + DATA_SOURCE + "</div>" +
+      "<div class='co-update'>币种：" + m.currency + " · 数据更新：" + UPDATE_TIME + "<br>" + DATA_SOURCE +
+      (c._quoteTime ? "<br>行情：" + QUOTE_SRC_LABEL + "（" + c._quoteTime + "）"
+        : c._quoteFailed ? "<br>⚠ 实时行情不可用（需经 Wrangler/Pages 服务访问），当前显示模拟数据" : "") + "</div>" +
     "</div>";
 }
 
@@ -578,7 +705,8 @@ function renderValuationPanel() {
   $("panel-valuation").innerHTML =
     "<div class='card'><div class='card-head'><span class='c-title'>行情与估值指标</span>" +
     "<span class='c-note'>币种 " + m.currency + " · 估值口径 TTM</span></div>" +
-    "<div class='card-body'><div class='kv-grid'>" + kvs + "</div></div>" + srcLine() + "</div>";
+    "<div class='card-body'><div class='kv-grid'>" + kvs + "</div></div>" +
+    srcLine(c._quoteTime ? "价格 / 市值 / 52 周区间 / 成交量额（A股港股含 PE/PB）：" + QUOTE_SRC_LABEL + "（" + c._quoteTime + "）" : null) + "</div>";
 }
 
 /* ================= 盈利与财务 ================= */

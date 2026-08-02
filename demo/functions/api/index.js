@@ -15,9 +15,10 @@ export async function onRequestGet(context) {
       { path: '/api/markets', desc: '国家/地区 → 交易所 → 板块结构与计数' },
       { path: '/api/companies?market=CN&sector=半导体&q=腾讯&limit=50&offset=0', desc: '公司数据库列表' },
       { path: '/api/company?id=catl', desc: '单个公司详情（精编公司含估值/财务/股东/事件）' },
-      { path: '/api/events?company=catl&type=earnings&lv=high&limit=20', desc: '公司事件 Timeline' }
+      { path: '/api/events?company=catl&type=earnings&lv=high&limit=20', desc: '公司事件 Timeline' },
+      { path: '/api/quote?codes=sh600519,hk00700,usTSLA', desc: '实时行情代理（腾讯财经，真实数据，支持 sh/sz/bj/hk/us）' }
     ],
-    note: '全部为模拟数据，仅用于原型演示，不构成投资建议'
+    note: '除 /api/quote 外全部为模拟数据，仅用于原型演示，不构成投资建议'
   });
 }
 

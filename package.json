@@ -1,0 +1,8 @@
+{
+  "name": "vibe-coding",
+  "private": true,
+  "description": "纯静态项目占位文件：为 Wrangler 提供可写的项目根缓存目录，不涉及任何构建或依赖",
+  "devDependencies": {
+    "wrangler": "^4.118.0"
+  }
+}
