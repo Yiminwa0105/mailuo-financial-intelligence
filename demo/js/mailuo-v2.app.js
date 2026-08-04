@@ -1021,6 +1021,7 @@ function toggleFav(id, btn) {
   }
   persistMarks();
   showToast(on ? "已加入收藏" : "已取消收藏", "fav");
+  if (globalThis.MailuoTrack) MailuoTrack.event(on ? "favorite" : "unfavorite", "event", id);
 }
 
 function toggleImp(id, btn) {
@@ -1036,17 +1037,31 @@ function toggleImp(id, btn) {
   }
   persistMarks();
   showToast(on ? "已标记为重要事件" : "已取消重要标记", "imp");
+  if (globalThis.MailuoTrack) MailuoTrack.event(on ? "mark_important" : "unmark_important", "event", id);
 }
 
 /* ================= 我的收藏（跨公司汇总页） ================= */
 
 // 在所有公司中查找事件，返回 { co, ev }
+// 注意：非热门公司的事件是懒加载生成的（id 形如 公司id+"g"+序号），
+// 需先 ensureProfile 触发生成，否则刷新后收藏页会查不到记录
 function findEventAnywhere(id) {
   var cos = Object.keys(EVENTS);
   for (var i = 0; i < cos.length; i++) {
     var list = EVENTS[cos[i]] || [];
     for (var j = 0; j < list.length; j++) {
       if (list[j].id === id) return { co: cos[i], ev: list[j] };
+    }
+  }
+  // 未命中：尝试按目录懒生成公司档案后再查
+  for (var k = 0; k < DIRECTORY.length; k++) {
+    var cid = DIRECTORY[k].id;
+    if (id.length > cid.length + 1 && id.indexOf(cid + "g") === 0) {
+      ensureProfile(cid);
+      var gen = EVENTS[cid] || [];
+      for (var m = 0; m < gen.length; m++) {
+        if (gen[m].id === id) return { co: cid, ev: gen[m] };
+      }
     }
   }
   return null;
@@ -1067,12 +1082,13 @@ function goMarks(filter) {
 }
 
 function renderMarksView() {
-  var favIds = Object.keys(state.favs);
-  var impIds = Object.keys(state.imps);
+  // 先解析出实际存在的事件（含懒加载生成公司），计数以解析结果为准
+  var favHits = Object.keys(state.favs).map(findEventAnywhere).filter(function (h) { return !!h; });
+  var impHits = Object.keys(state.imps).map(findEventAnywhere).filter(function (h) { return !!h; });
   var filter = state.marksFilter;
   var showFav = filter !== "imp";
   var showImp = filter !== "fav";
-  var total = (showFav ? favIds.length : 0) + (showImp ? impIds.length : 0);
+  var total = (showFav ? favHits.length : 0) + (showImp ? impHits.length : 0);
 
   var chips =
     "<div class='marks-chips'>" +
@@ -1094,8 +1110,8 @@ function renderMarksView() {
       "<div class='card'>" +
         "<div class='marks-head'>我的收藏与重要标记<span class='marks-total'>共 " + total + " 条</span></div>" +
         chips +
-        (showFav ? marksSection("★ 已收藏", favIds, "fav") : "") +
-        (showImp ? marksSection("⚑ 已标重要", impIds, "imp") : "") +
+        (showFav ? marksSection("★ 已收藏", favHits, "fav") : "") +
+        (showImp ? marksSection("⚑ 已标重要", impHits, "imp") : "") +
       "</div>";
   }
 
@@ -1130,15 +1146,13 @@ function renderMarksView() {
   });
 }
 
-function marksSection(title, ids, kind) {
-  if (ids.length === 0) {
+function marksSection(title, hits, kind) {
+  if (hits.length === 0) {
     return "<div class='marks-sec'><div class='marks-sec-title'>" + title + "</div>" +
       "<div class='marks-none'>暂无记录</div></div>";
   }
   // 按时间倒序
-  var rows = ids.map(function (id) { return findEventAnywhere(id); })
-    .filter(function (h) { return !!h; })
-    .sort(function (a, b) { return parseTime(b.ev.time) - parseTime(a.ev.time); });
+  var rows = hits.slice().sort(function (a, b) { return parseTime(b.ev.time) - parseTime(a.ev.time); });
 
   var html = "<div class='marks-sec'><div class='marks-sec-title'>" + title +
     "<span class='marks-sec-count'>" + rows.length + "</span></div>";
