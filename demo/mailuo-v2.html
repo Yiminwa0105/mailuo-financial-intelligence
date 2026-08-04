@@ -118,6 +118,7 @@
 <script type="module">
   import * as D from './js/mailuo-v2.data.js';
   Object.assign(globalThis, D);       // 数据层暴露为全局变量，供 app.js 使用
+  await import('./js/mailuo-v2.track.js');  // 行为上报层（匿名 UUID，自动上报 visit）
   await import('./js/mailuo-v2.app.js');
 </script>
 </body>
