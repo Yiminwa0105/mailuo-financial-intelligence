@@ -16,10 +16,28 @@ var state = {
   types: {},              // 事件类型开关
   lvFilter: "all",        // 重要性筛选
   range: "all",           // 时间范围
-  favs: {},
-  imps: {},
+  favs: loadMarks("mailuo_favs"),
+  imps: loadMarks("mailuo_imps"),
   currentDetail: null
 };
+
+// 从 localStorage 读回收藏 / 标重要数据
+function loadMarks(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "{}");
+  } catch (e) {
+    return {};
+  }
+}
+
+// 将收藏 / 标重要数据写入 localStorage
+function persistMarks() {
+  try {
+    localStorage.setItem("mailuo_favs", JSON.stringify(state.favs));
+    localStorage.setItem("mailuo_imps", JSON.stringify(state.imps));
+  } catch (e) { /* 存储不可用时忽略，仅保留内存状态 */ }
+  updateMarksCount();
+}
 
 Object.keys(TYPE_META).forEach(function (t) { state.types[t] = true; });
 
@@ -47,7 +65,6 @@ function marketTag(mkt) {
 
 /* ================= 实时行情接入（/api/quote 代理腾讯财经，失败回退模拟数据） ================= */
 
-var QUOTE_SRC_LABEL = "腾讯财经 · 实时行情";
 var quoteCache = {};    // txCode -> { time, data }
 var QUOTE_TTL = 60000;  // 60s 内复用缓存，同时避免重渲染死循环
 
@@ -82,6 +99,7 @@ function applyQuoteToDir(d, q) {
   d.dir = q.changePct >= 0 ? "up" : "down";
   if (q.totalCapYi) d.cap = fmtCapReal(m.curSym, q.totalCapYi);
   d._quoteTime = q.time;
+  d._quoteKind = q.snapshotAt ? "收盘快照" : "实时行情";
 }
 
 function applyQuoteToProfile(c, q) {
@@ -97,6 +115,29 @@ function applyQuoteToProfile(c, q) {
   if (q.peTtm) c.valuation["PE (TTM)"] = q.peTtm.toFixed(2);
   if (q.pb) c.valuation["PB"] = q.pb.toFixed(2);
   c._quoteTime = q.time;
+  c._quoteKind = q.snapshotAt ? "收盘快照" : "实时行情";
+}
+
+/* 启动时拉取 D1 收盘快照，一次性水合全站目录的真实价格；
+   无快照或失败时静默，后续浏览自动走 /api/quote 实时接口 */
+function initQuoteSnapshots() {
+  fetch("/api/quotes")
+    .then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); })
+    .then(function (data) {
+      if (!data || !data.quotes || !data.meta.count) return;
+      Object.keys(data.quotes).forEach(function (tx) {
+        quoteCache[tx] = { time: Date.now(), data: data.quotes[tx] };
+      });
+      var hit = 0;
+      DIRECTORY.forEach(function (d) {
+        var tx = toTxCode(d);
+        var cached = tx && quoteCache[tx];
+        if (cached && cached.data) { applyQuoteToDir(d, cached.data); hit++; }
+      });
+      if (hit && state.view === "sector") renderSectorView();
+      console.info("[quote] 已载入收盘快照 " + hit + " 条（" + data.meta.snapshotTime + "）");
+    })
+    .catch(function () { /* 无快照时静默，走实时接口 */ });
 }
 
 /* pairs: [[dirEntry, txCode], ...]，只拉缓存过期项；失败静默回退模拟数据 */
@@ -300,6 +341,7 @@ function showView(v) {
   $("viewCountry").style.display = v === "country" ? "block" : "none";
   $("viewExchange").style.display = v === "exchange" ? "block" : "none";
   $("viewSector").style.display = v === "sector" ? "block" : "none";
+  $("viewMarks").style.display = v === "marks" ? "block" : "none";
   $("companyPage").style.display = v === "company" ? "block" : "none";
   $("breadcrumb").style.display = v === "home" ? "none" : "flex";
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -347,6 +389,11 @@ function renderBreadcrumb() {
   var bc = $("breadcrumb");
   if (state.view === "home") { bc.style.display = "none"; return; }
   var parts = ["<span class='bc-link' data-nav='home'>首页</span>"];
+  if (state.view === "marks") {
+    parts.push("<span class='bc-cur'>我的收藏</span>");
+    bc.innerHTML = parts.join("<span class='bc-sep'>/</span>");
+    return;
+  }
   if (state.country) {
     var cn = COUNTRIES[state.country].name;
     if (state.view === "country") parts.push("<span class='bc-cur'>" + cn + "</span>");
@@ -500,7 +547,10 @@ function renderSectorView() {
     "<th class='r'>市值</th><th class='r'>最新价</th><th class='r'>涨跌幅</th><th class='r'>机构持仓变化</th><th>大股东变化</th><th>最近资本事件</th><th>披露时间</th></tr></thead>" +
     "<tbody>" + rows + "</tbody></table></div>" +
     srcLine(list.some(function (d) { return d._quoteTime; })
-      ? "价格 / 涨跌幅 / 市值：" + QUOTE_SRC_LABEL + "（" + list.filter(function (d) { return d._quoteTime; })[0]._quoteTime + "）· 其余字段为模拟数据"
+      ? (function () {
+          var q = list.filter(function (d) { return d._quoteTime; })[0];
+          return "价格 / 涨跌幅 / 市值：腾讯财经 · " + (q._quoteKind || "实时行情") + "（" + q._quoteTime + "）· 其余字段为模拟数据";
+        })()
       : "列表字段口径：最近一期公开披露 · 模拟数据") + "</div>";
 
   Array.prototype.forEach.call($("viewSector").querySelectorAll("[data-co]"), function (tr) {
@@ -653,7 +703,7 @@ function renderCoHeader() {
       "<div class='co-stat'><div class='s-lbl'>成交额</div><div class='s-val num'>" + c.turnover + "</div></div>" +
       "<div class='co-stat'><div class='s-lbl'>52 周高 / 低</div><div class='s-val num'>" + m.curSym + c.high52 + " / " + m.curSym + c.low52 + "</div></div>" +
       "<div class='co-update'>币种：" + m.currency + " · 数据更新：" + UPDATE_TIME + "<br>" + DATA_SOURCE +
-      (c._quoteTime ? "<br>行情：" + QUOTE_SRC_LABEL + "（" + c._quoteTime + "）"
+      (c._quoteTime ? "<br>行情：腾讯财经 · " + (c._quoteKind || "实时行情") + "（" + c._quoteTime + "）"
         : c._quoteFailed ? "<br>⚠ 实时行情不可用（需经 Wrangler/Pages 服务访问），当前显示模拟数据" : "") + "</div>" +
     "</div>";
 }
@@ -706,7 +756,7 @@ function renderValuationPanel() {
     "<div class='card'><div class='card-head'><span class='c-title'>行情与估值指标</span>" +
     "<span class='c-note'>币种 " + m.currency + " · 估值口径 TTM</span></div>" +
     "<div class='card-body'><div class='kv-grid'>" + kvs + "</div></div>" +
-    srcLine(c._quoteTime ? "价格 / 市值 / 52 周区间 / 成交量额（A股港股含 PE/PB）：" + QUOTE_SRC_LABEL + "（" + c._quoteTime + "）" : null) + "</div>";
+    srcLine(c._quoteTime ? "价格 / 市值 / 52 周区间 / 成交量额（A股港股含 PE/PB）：腾讯财经 · " + (c._quoteKind || "实时行情") + "（" + c._quoteTime + "）" : null) + "</div>";
 }
 
 /* ================= 盈利与财务 ================= */
@@ -968,6 +1018,7 @@ function toggleFav(id, btn) {
     btn.textContent = on ? "★ 已收藏" : "☆ 收藏";
     popBtn(btn);
   }
+  persistMarks();
   showToast(on ? "已加入收藏" : "已取消收藏", "fav");
 }
 
@@ -982,7 +1033,120 @@ function toggleImp(id, btn) {
     var card = btn.closest(".tl-card");
     if (card) card.classList.toggle("important", on);
   }
+  persistMarks();
   showToast(on ? "已标记为重要事件" : "已取消重要标记", "imp");
+}
+
+/* ================= 我的收藏（跨公司汇总页） ================= */
+
+// 在所有公司中查找事件，返回 { co, ev }
+function findEventAnywhere(id) {
+  var cos = Object.keys(EVENTS);
+  for (var i = 0; i < cos.length; i++) {
+    var list = EVENTS[cos[i]] || [];
+    for (var j = 0; j < list.length; j++) {
+      if (list[j].id === id) return { co: cos[i], ev: list[j] };
+    }
+  }
+  return null;
+}
+
+// 更新顶栏入口的计数徽标（收藏 + 标重要的去重总数）
+function updateMarksCount() {
+  var ids = {};
+  Object.keys(state.favs).forEach(function (k) { ids[k] = 1; });
+  Object.keys(state.imps).forEach(function (k) { ids[k] = 1; });
+  $("marksCount").textContent = Object.keys(ids).length;
+}
+
+function goMarks() {
+  state.company = null;
+  renderMarksView();
+  showView("marks");
+  renderBreadcrumb();
+}
+
+function renderMarksView() {
+  var favIds = Object.keys(state.favs);
+  var impIds = Object.keys(state.imps);
+  var total = favIds.length + impIds.length;
+
+  if (total === 0) {
+    $("viewMarks").innerHTML =
+      "<div class='card marks-empty'>" +
+        "<div class='empty-state'><div class='big'>☆</div><div>还没有收藏或标记任何事件</div>" +
+        "<div style='font-size:12px;margin-top:4px;'>在公司档案页的事件 Timeline 中点击「☆ 收藏」或「⚑ 标记重要」即可加入</div></div>" +
+      "</div>";
+    return;
+  }
+
+  $("viewMarks").innerHTML =
+    "<div class='card'>" +
+      "<div class='marks-head'>我的收藏与重要标记<span class='marks-total'>共 " + total + " 条</span></div>" +
+      marksSection("★ 已收藏", favIds, "fav") +
+      marksSection("⚑ 已标重要", impIds, "imp") +
+    "</div>";
+
+  // 事件绑定：查看详情 / 移除
+  Array.prototype.forEach.call($("viewMarks").querySelectorAll("[data-mact]"), function (el) {
+    el.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var id = el.getAttribute("data-mid");
+      var act = el.getAttribute("data-mact");
+      if (act === "open") {
+        var hit = findEventAnywhere(id);
+        if (!hit) return;
+        selectCompany(hit.co);
+        openDrawer(id);
+      } else if (act === "unfav") {
+        toggleFav(id);
+        renderMarksView();
+      } else if (act === "unimp") {
+        toggleImp(id);
+        renderMarksView();
+      }
+    });
+  });
+}
+
+function marksSection(title, ids, kind) {
+  if (ids.length === 0) {
+    return "<div class='marks-sec'><div class='marks-sec-title'>" + title + "</div>" +
+      "<div class='marks-none'>暂无记录</div></div>";
+  }
+  // 按时间倒序
+  var rows = ids.map(function (id) { return findEventAnywhere(id); })
+    .filter(function (h) { return !!h; })
+    .sort(function (a, b) { return parseTime(b.ev.time) - parseTime(a.ev.time); });
+
+  var html = "<div class='marks-sec'><div class='marks-sec-title'>" + title +
+    "<span class='marks-sec-count'>" + rows.length + "</span></div>";
+  rows.forEach(function (h) {
+    var ev = h.ev;
+    var co = findCompany(h.co);
+    var tm = TYPE_META[ev.type];
+    var im = IMPACT_META[ev.imp];
+    html +=
+      "<div class='mark-card' data-mact='open' data-mid='" + ev.id + "'>" +
+        "<div class='mark-main'>" +
+          "<div class='mark-meta'>" +
+            "<span class='mark-co'>" + (co ? co.name : h.co) + "</span>" +
+            "<span class='tl-time'>" + ev.time + "</span>" +
+            "<span class='type-badge " + tm.cls + "'>" + tm.label + "</span>" +
+            "<span class='impact-badge " + im.cls + "'>" + im.label + "</span>" +
+          "</div>" +
+          "<div class='mark-title'>" + ev.title + "</div>" +
+          "<div class='mark-brief'>" + ev.brief + "</div>" +
+        "</div>" +
+        "<div class='mark-side'>" +
+          (kind === "fav"
+            ? "<button class='act-btn' data-mact='unfav' data-mid='" + ev.id + "'>✕ 取消收藏</button>"
+            : "<button class='act-btn' data-mact='unimp' data-mid='" + ev.id + "'>✕ 取消标记</button>") +
+          "<button class='act-btn' data-mact='open' data-mid='" + ev.id + "'>详情 →</button>" +
+        "</div>" +
+      "</div>";
+  });
+  return html + "</div>";
 }
 
 /* ================= 详情抽屉 ================= */
@@ -1123,9 +1287,14 @@ $("searchInput").addEventListener("keydown", function (e) {
 // 品牌回首页
 $("brandHome").addEventListener("click", goHome);
 
+// 我的收藏入口
+$("marksEntry").addEventListener("click", goMarks);
+
 /* ================= 初始化 ================= */
 
 renderMarketChips();
 renderHome();
+initQuoteSnapshots();
+updateMarksCount();
 
 })();
