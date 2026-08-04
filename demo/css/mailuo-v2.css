@@ -677,6 +677,14 @@
     transition: background 0.15s ease, border-color 0.15s ease;
   }
   .marks-entry:hover { background: rgba(232, 179, 75, 0.25); border-color: var(--amber); }
+  .marks-entry.imp {
+    margin-left: 0;
+    border-color: rgba(200, 110, 105, 0.55);
+    background: rgba(168, 67, 63, 0.25);
+    color: #f0b3ae;
+  }
+  .marks-entry.imp:hover { background: rgba(168, 67, 63, 0.4); border-color: #c86e69; }
+  .marks-count.imp { background: #d98880; color: var(--navy-900); }
   .marks-count {
     min-width: 18px; height: 18px; line-height: 18px;
     padding: 0 5px;
@@ -694,6 +702,20 @@
     margin-bottom: 16px;
   }
   .marks-total { font-size: 12px; font-weight: 500; color: var(--graphite-500); }
+
+  .marks-chips { display: flex; gap: 8px; margin-bottom: 16px; }
+  .marks-chip {
+    padding: 4px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--graphite-200);
+    background: var(--white);
+    color: var(--graphite-500);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+  .marks-chip:hover { border-color: var(--navy-600); color: var(--navy-600); }
+  .marks-chip.on { background: var(--navy-900); border-color: var(--navy-900); color: var(--white); }
 
   .marks-sec { margin-bottom: 20px; }
   .marks-sec:last-child { margin-bottom: 0; }

@@ -18,6 +18,7 @@ var state = {
   range: "all",           // 时间范围
   favs: loadMarks("mailuo_favs"),
   imps: loadMarks("mailuo_imps"),
+  marksFilter: "all",     // 收藏页分组筛选：all | fav | imp
   currentDetail: null
 };
 
@@ -390,7 +391,7 @@ function renderBreadcrumb() {
   if (state.view === "home") { bc.style.display = "none"; return; }
   var parts = ["<span class='bc-link' data-nav='home'>首页</span>"];
   if (state.view === "marks") {
-    parts.push("<span class='bc-cur'>我的收藏</span>");
+    parts.push("<span class='bc-cur'>" + (state.marksFilter === "imp" ? "标记重要" : "我的收藏") + "</span>");
     bc.innerHTML = parts.join("<span class='bc-sep'>/</span>");
     return;
   }
@@ -1051,16 +1052,15 @@ function findEventAnywhere(id) {
   return null;
 }
 
-// 更新顶栏入口的计数徽标（收藏 + 标重要的去重总数）
+// 更新顶栏入口的计数徽标（收藏 / 标重要分别计数）
 function updateMarksCount() {
-  var ids = {};
-  Object.keys(state.favs).forEach(function (k) { ids[k] = 1; });
-  Object.keys(state.imps).forEach(function (k) { ids[k] = 1; });
-  $("marksCount").textContent = Object.keys(ids).length;
+  $("marksCount").textContent = Object.keys(state.favs).length;
+  $("impCount").textContent = Object.keys(state.imps).length;
 }
 
-function goMarks() {
+function goMarks(filter) {
   state.company = null;
+  state.marksFilter = filter || "all";
   renderMarksView();
   showView("marks");
   renderBreadcrumb();
@@ -1069,23 +1069,44 @@ function goMarks() {
 function renderMarksView() {
   var favIds = Object.keys(state.favs);
   var impIds = Object.keys(state.imps);
-  var total = favIds.length + impIds.length;
+  var filter = state.marksFilter;
+  var showFav = filter !== "imp";
+  var showImp = filter !== "fav";
+  var total = (showFav ? favIds.length : 0) + (showImp ? impIds.length : 0);
+
+  var chips =
+    "<div class='marks-chips'>" +
+      "<button class='marks-chip" + (filter === "all" ? " on" : "") + "' data-mfilter='all'>全部</button>" +
+      "<button class='marks-chip" + (filter === "fav" ? " on" : "") + "' data-mfilter='fav'>★ 已收藏</button>" +
+      "<button class='marks-chip" + (filter === "imp" ? " on" : "") + "' data-mfilter='imp'>⚑ 已标重要</button>" +
+    "</div>";
 
   if (total === 0) {
     $("viewMarks").innerHTML =
       "<div class='card marks-empty'>" +
-        "<div class='empty-state'><div class='big'>☆</div><div>还没有收藏或标记任何事件</div>" +
+        "<div class='marks-head'>我的收藏与重要标记</div>" + chips +
+        "<div class='empty-state'><div class='big'>" + (filter === "imp" ? "⚑" : "☆") + "</div>" +
+        "<div>" + (filter === "imp" ? "还没有标记重要的事件" : filter === "fav" ? "还没有收藏任何事件" : "还没有收藏或标记任何事件") + "</div>" +
         "<div style='font-size:12px;margin-top:4px;'>在公司档案页的事件 Timeline 中点击「☆ 收藏」或「⚑ 标记重要」即可加入</div></div>" +
       "</div>";
-    return;
+  } else {
+    $("viewMarks").innerHTML =
+      "<div class='card'>" +
+        "<div class='marks-head'>我的收藏与重要标记<span class='marks-total'>共 " + total + " 条</span></div>" +
+        chips +
+        (showFav ? marksSection("★ 已收藏", favIds, "fav") : "") +
+        (showImp ? marksSection("⚑ 已标重要", impIds, "imp") : "") +
+      "</div>";
   }
 
-  $("viewMarks").innerHTML =
-    "<div class='card'>" +
-      "<div class='marks-head'>我的收藏与重要标记<span class='marks-total'>共 " + total + " 条</span></div>" +
-      marksSection("★ 已收藏", favIds, "fav") +
-      marksSection("⚑ 已标重要", impIds, "imp") +
-    "</div>";
+  // 分组筛选切换
+  Array.prototype.forEach.call($("viewMarks").querySelectorAll("[data-mfilter]"), function (b) {
+    b.addEventListener("click", function () {
+      state.marksFilter = b.getAttribute("data-mfilter");
+      renderMarksView();
+      renderBreadcrumb();
+    });
+  });
 
   // 事件绑定：查看详情 / 移除
   Array.prototype.forEach.call($("viewMarks").querySelectorAll("[data-mact]"), function (el) {
@@ -1287,8 +1308,9 @@ $("searchInput").addEventListener("keydown", function (e) {
 // 品牌回首页
 $("brandHome").addEventListener("click", goHome);
 
-// 我的收藏入口
-$("marksEntry").addEventListener("click", goMarks);
+// 我的收藏 / 标记重要入口
+$("marksEntry").addEventListener("click", function () { goMarks("fav"); });
+$("impEntry").addEventListener("click", function () { goMarks("imp"); });
 
 /* ================= 初始化 ================= */
 
