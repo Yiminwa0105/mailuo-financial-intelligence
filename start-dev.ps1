@@ -11,4 +11,4 @@ if (-not (Test-Path $wrangler)) {
 }
 
 Set-Location (Join-Path $PSScriptRoot "demo")
-& $node $wrangler pages dev . --port 8788
+& $node $wrangler pages dev . --port 8788 --d1 DB

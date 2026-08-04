@@ -117,12 +117,20 @@ python -m http.server 8000
 | `GET /api/company?id=catl` | 单个公司详情（精编公司含估值/财务/股东/事件） |
 | `GET /api/events?company=catl&type=earnings&lv=high&limit=20` | 公司事件 Timeline（`company=all` 可取全部精编事件） |
 | `GET /api/quote?codes=sh600519,hk00700,usTSLA` | **实时行情代理**（腾讯财经真实数据，支持 sh/sz/bj/hk/us，单次最多 60 个代码） |
+| `GET /api/quotes` | **D1 收盘快照全量读取**（前端启动时一次性水合全站真实价格） |
+| `POST /api/snapshot` | 收盘快照写入（GitHub Actions 定时触发，最小间隔 10 分钟，可选 SNAPSHOT_TOKEN 保护） |
 
 示例：<https://vibe-coding-4vf.pages.dev/api/companies?market=CN&sector=半导体&limit=5>
 
-> 除 `/api/quote` 外，API 与站点共用同一份模拟数据层（`js/mailuo-v2.data.js`），所有响应均带 `meta.dataSource` 与 `meta.updateTime` 标注。
-> 前端公司列表页与档案页的**价格 / 涨跌幅 / 市值 / 52 周区间 / PE / PB** 会优先替换为 `/api/quote` 的真实行情（韩股除外，无免费源），接口不可用时自动回退模拟数据，来源行会标注「腾讯财经 · 实时行情」。
+> 除行情类接口外，API 与站点共用同一份模拟数据层（`js/mailuo-v2.data.js`），所有响应均带 `meta.dataSource` 与 `meta.updateTime` 标注。
+> 前端公司列表页与档案页的**价格 / 涨跌幅 / 市值 / 52 周区间 / PE / PB** 优先使用 D1 收盘快照（真实数据），快照缺失时走 `/api/quote` 实时接口，再失败回退模拟数据；来源行会标注「收盘快照 / 实时行情」（韩股除外，无免费源）。
 > 本地开发含 Functions 需用 Wrangler：仓库根目录执行 `powershell -ExecutionPolicy Bypass -File .\start-dev.ps1`，访问 <http://localhost:8788/mailuo-v2.html>。
+
+### 收盘快照管线（D1 + 定时任务）
+
+- **存储**：Cloudflare D1（`mailuo-quotes`，单表 `quotes`，约 590 行，远低于免费额度）
+- **触发**：GitHub Actions 工作流 `.github/workflows/snapshot.yml`，工作日 UTC 08:30（北京时间 16:30，A股收盘后）调用 `/api/snapshot`；公有仓库免费，也可在 Actions 页手动触发
+- **部署**：`demo` 目录执行 `wrangler pages deploy . --project-name=vibe-coding`（D1 绑定见 `demo/wrangler.toml`）
 
 ## 明确不做（本期范围）
 

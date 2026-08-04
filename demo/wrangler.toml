@@ -1,4 +1,5 @@
 name = "vibe-coding"
+pages_build_output_dir = "."
 compatibility_date = "2026-08-02"
 
 # D1 行情快照库：/api/snapshot 定时写入，/api/quotes 读取
