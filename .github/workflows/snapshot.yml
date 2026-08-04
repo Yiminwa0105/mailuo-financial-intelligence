@@ -1,0 +1,16 @@
+name: 每日收盘行情快照
+
+# 工作日 A股收盘后触发：UTC 08:30 = 北京时间 16:30
+# GitHub Actions cron 为 UTC 时区，且可能有数分钟排队延迟（对快照场景无影响）
+on:
+  schedule:
+    - cron: '30 8 * * 1-5'
+  workflow_dispatch:   # 支持手动触发
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 调用快照接口写入 D1
+        run: |
+          curl -fsSL -X POST "https://vibe-coding-4vf.pages.dev/api/snapshot"

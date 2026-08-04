@@ -1,0 +1,8 @@
+name = "vibe-coding"
+compatibility_date = "2026-08-02"
+
+# D1 行情快照库：/api/snapshot 定时写入，/api/quotes 读取
+[[d1_databases]]
+binding = "DB"
+database_name = "mailuo-quotes"
+database_id = "49283486-324e-48f4-865a-17f349dfcd66"
